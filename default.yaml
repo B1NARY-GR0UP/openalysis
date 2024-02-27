@@ -7,3 +7,6 @@ datasource:
     password: "114514"
     database: "openalysis"
 backend:
+  graphql:
+    endpoint: "https://api.github.com/graphql"
+    token: ""

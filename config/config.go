@@ -2,19 +2,6 @@ package config
 
 import "github.com/spf13/viper"
 
-var DefaultConfig = &Config{}
-
-func (cfg *Config) ReadInConfig(path string) error {
-	viper.SetConfigFile(path)
-	if err := viper.ReadInConfig(); err != nil {
-		return err
-	}
-	if err := viper.Unmarshal(cfg); err != nil {
-		return err
-	}
-	return nil
-}
-
 type Config struct {
 	Openalysis Openalysis `yaml:"openalysis"`
 	DataSource DataSource `yaml:"datasource"`
@@ -37,4 +24,21 @@ type MySQL struct {
 }
 
 type Backend struct {
+	GraphQL GraphQL `yaml:"graphql"`
+}
+
+type GraphQL struct {
+	Endpoint string `yaml:"endpoint"`
+	Token    string `yaml:"token"`
+}
+
+func (cfg *Config) ReadInConfig(path string) error {
+	viper.SetConfigFile(path)
+	if err := viper.ReadInConfig(); err != nil {
+		return err
+	}
+	if err := viper.Unmarshal(cfg); err != nil {
+		return err
+	}
+	return nil
 }
