@@ -1,6 +1,6 @@
 package graphql
 
-// TODO: config cobra
+// TODO: test service procedure
 
 func SendRequest() {
 }
