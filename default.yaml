@@ -8,5 +8,4 @@ datasource:
     database: "openalysis"
 backend:
   graphql:
-    endpoint: "https://api.github.com/graphql"
     token: ""

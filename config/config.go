@@ -2,6 +2,8 @@ package config
 
 import "github.com/spf13/viper"
 
+var DefaultConfig = &Config{}
+
 type Config struct {
 	Openalysis Openalysis `yaml:"openalysis"`
 	DataSource DataSource `yaml:"datasource"`
@@ -28,8 +30,7 @@ type Backend struct {
 }
 
 type GraphQL struct {
-	Endpoint string `yaml:"endpoint"`
-	Token    string `yaml:"token"`
+	Token string `yaml:"token"`
 }
 
 func (cfg *Config) ReadInConfig(path string) error {

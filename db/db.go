@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/B1NARY-GR0UP/openalysis/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -8,11 +9,13 @@ import (
 var DB *gorm.DB
 
 func Init() {
-	DB, err := gorm.Open(mysql.Open(""), &gorm.Config{})
+	// TODO: replace dsn with config
+	var err error
+	DB, err = gorm.Open(mysql.Open("root:114514@tcp(localhost:3306)/openalysis?charset=utf8&parseTime=True&loc=Local"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
 
-	// TODO: use docker
-	DB.AutoMigrate()
+	// TODO: use mount
+	DB.AutoMigrate(&model.Repository{})
 }
