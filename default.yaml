@@ -7,5 +7,6 @@ datasource:
     password: "114514"
     database: "openalysis"
 backend:
+  frequency: 3
   graphql:
     token: ""

@@ -26,7 +26,9 @@ type MySQL struct {
 }
 
 type Backend struct {
-	GraphQL GraphQL `yaml:"graphql"`
+	// Frequency api pull frequency (unit: hour)
+	Frequency int     `yaml:"frequency"`
+	GraphQL   GraphQL `yaml:"graphql"`
 }
 
 type GraphQL struct {
