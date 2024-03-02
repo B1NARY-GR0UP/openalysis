@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/B1NARY-GR0UP/openalysis/model"
+	"github.com/B1NARY-GR0UP/openalysis/db/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -18,4 +18,9 @@ func Init() {
 
 	// TODO: use mount
 	DB.AutoMigrate(&model.Repository{})
+}
+
+func CreateRepository(repo *model.Repository) (int64, error) {
+	res := DB.Create(repo)
+	return res.RowsAffected, res.Error
 }
