@@ -2,15 +2,18 @@ package config
 
 import "github.com/spf13/viper"
 
-var DefaultConfig = &Config{}
+var GlobalConfig = &Config{}
 
 type Config struct {
-	Openalysis Openalysis `yaml:"openalysis"`
+	Groups     []Group    `yaml:"groups"`
 	DataSource DataSource `yaml:"datasource"`
 	Backend    Backend    `yaml:"backend"`
 }
 
-type Openalysis struct {
+type Group struct {
+	Name  string   `yaml:"name"`
+	Orgs  []string `yaml:"orgs"`
+	Repos []string `yaml:"repos"`
 }
 
 type DataSource struct {
@@ -26,13 +29,8 @@ type MySQL struct {
 }
 
 type Backend struct {
-	// Frequency api pull frequency (unit: hour)
-	Frequency int     `yaml:"frequency"`
-	GraphQL   GraphQL `yaml:"graphql"`
-}
-
-type GraphQL struct {
-	Token string `yaml:"token"`
+	Frequency int    `yaml:"frequency"` // Frequency api pull frequency (unit: hour)
+	Token     string `yaml:"token"`
 }
 
 func (cfg *Config) ReadInConfig(path string) error {

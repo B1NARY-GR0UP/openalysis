@@ -1,4 +1,18 @@
-openalysis:
+groups:
+  - name: "hello"
+    orgs:
+      - "org1"
+    repos:
+      - "repo1"
+      - "repo2"
+  - name: "world"
+    orgs:
+      - "org2"
+      - "org3"
+    repos:
+      - "repo3"
+      - "repo4"
+      - "repo5"
 datasource:
   mysql:
     host: "localhost"
@@ -8,5 +22,4 @@ datasource:
     database: "openalysis"
 backend:
   frequency: 3
-  graphql:
-    token: ""
+  token: ""

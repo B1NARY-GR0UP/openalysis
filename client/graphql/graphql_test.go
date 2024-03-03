@@ -8,7 +8,7 @@ import (
 )
 
 func TestSendRequest(t *testing.T) {
-	if err := config.DefaultConfig.ReadInConfig("../../default.yaml"); err != nil {
+	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
 		panic(err.Error())
 	}
 	defaultClient = NewClient()

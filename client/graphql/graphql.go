@@ -49,7 +49,7 @@ func GetRepoBasicInfo(ctx context.Context, owner, name string) (*RepoBasicInfo, 
 func NewClient() *githubv4.Client {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{
-			AccessToken: config.DefaultConfig.Backend.GraphQL.Token,
+			AccessToken: config.GlobalConfig.Backend.GraphQL.Token,
 		},
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)

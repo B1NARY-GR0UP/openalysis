@@ -17,7 +17,21 @@ func Init() {
 	}
 
 	// TODO: use mount
-	DB.AutoMigrate(&model.Repository{})
+	err = DB.AutoMigrate(
+		&model.Contributor{},
+		&model.Group{},
+		&model.Issue{},
+		&model.Organization{},
+		&model.PullRequest{},
+		&model.Repository{},
+		&model.GroupsOrganizations{},
+		&model.GroupsRepositories{},
+		&model.ContributorsIssues{},
+		&model.ContributorsPullRequests{},
+	)
+	if err != nil {
+		panic("failed to migrate tables")
+	}
 }
 
 func CreateRepository(repo *model.Repository) (int64, error) {
