@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/db"
 )
@@ -25,5 +26,6 @@ func InitConfig(path string) error {
 	return err
 }
 
-func AddGroup() {
+func AddGroups(groups ...config.Group) {
+	fmt.Println(groups)
 }

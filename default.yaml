@@ -13,6 +13,16 @@ groups:
       - "repo3"
       - "repo4"
       - "repo5"
+  # cloudwego family
+  - name: "cloudwego"
+    orgs:
+      - "cloudwego"
+      - "kitex-contrib"
+      - "hertz-contrib"
+      - "volo-rs"
+    repos:
+      - "bytedance/sonic"
+      - "bytedance/monoio"
 datasource:
   mysql:
     host: "localhost"
@@ -21,5 +31,6 @@ datasource:
     password: "114514"
     database: "openalysis"
 backend:
+  # api pull frequency (unit: hour)
   frequency: 3
   token: ""
