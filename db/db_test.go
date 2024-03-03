@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	"github.com/B1NARY-GR0UP/openalysis/db/model"
+	"github.com/B1NARY-GR0UP/openalysis/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"testing"
