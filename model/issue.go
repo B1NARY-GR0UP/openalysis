@@ -1,12 +1,13 @@
 package model
 
 import (
+	"gorm.io/gorm"
 	"time"
 )
 
 // Issue many to many Contributor
 type Issue struct {
-	Model
+	gorm.Model
 
 	NodeID string
 

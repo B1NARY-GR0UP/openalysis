@@ -1,12 +1,13 @@
 package model
 
 import (
+	"gorm.io/gorm"
 	"time"
 )
 
 // PullRequest many to many Contributor
 type PullRequest struct {
-	Model
+	gorm.Model
 
 	NodeID string
 
