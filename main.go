@@ -11,7 +11,7 @@ import (
 // 1. 读取配置文件
 // 2. 初始化数据库
 // 3. 插入 groups 表
-// 4. 根据配置拉取 api 插入 orgs TODO: 由于 groups 和 orgs 表增加了数量统计字段，需要重新考虑数据插入时机
+// 4. 根据配置拉取 api 插入 orgs
 // 5. 获取 orgs 下的所有 repos
 // 6. 插入 repos 表
 // 7. 第一次需要全部拉取 issue 和 pr （只有 OPEN 的 issue 和 pr 才需要分析）

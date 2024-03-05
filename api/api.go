@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/db"
 )
@@ -12,6 +13,11 @@ import (
 func Start(path string) {
 	InitConfig(path)
 	InitDB()
+
+}
+
+func InitClient() {
+	graphql.Init()
 }
 
 // InitDB should execute after InitConfig due to DSN configuration
