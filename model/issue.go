@@ -11,7 +11,6 @@ type Issue struct {
 
 	NodeID string
 
-	// TODO: author could be bot, user...
 	Author       string
 	AuthorNodeID string
 	RepoNodeID   string

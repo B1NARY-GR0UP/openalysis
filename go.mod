@@ -3,6 +3,7 @@ module github.com/B1NARY-GR0UP/openalysis
 go 1.22.0
 
 require (
+	github.com/google/go-github/v60 v60.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shurcooL/githubv4 v0.0.0-20240120211514-18a1ae0e79dc
 	github.com/spf13/cobra v1.8.0
@@ -16,6 +17,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

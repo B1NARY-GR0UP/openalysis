@@ -8,10 +8,10 @@ import (
 )
 
 func TestQueryRepoInfo(t *testing.T) {
-	Init()
 	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
 		panic(err.Error())
 	}
+	Init()
 	info, err := QueryRepoInfo(context.Background(), "cloudwego", "hertz")
 	if err != nil {
 		fmt.Println(err)
@@ -20,10 +20,10 @@ func TestQueryRepoInfo(t *testing.T) {
 }
 
 func TestQueryRepoNameByOrg(t *testing.T) {
-	Init()
 	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
 		panic(err.Error())
 	}
+	Init()
 	res, err := QueryRepoNameByOrg(context.Background(), "cloudwego")
 	if err != nil {
 		fmt.Println(err)
@@ -38,4 +38,7 @@ func TestFor(t *testing.T) {
 		}
 		fmt.Println(i)
 	}
+	sli := make([]int, 3)
+	sli = append(sli, 1, 2)
+	fmt.Println(sli) // [0 0 0 1 2]
 }
