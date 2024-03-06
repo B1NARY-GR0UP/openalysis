@@ -9,40 +9,15 @@ import (
 
 var GlobalV4Client *githubv4.Client
 
-//var query struct {
-//	Viewer struct { // must be capital form
-//		Login     githubv4.String // use go string type is also ok
-//		CreatedAt githubv4.DateTime
-//	}
-//}
-
-type RepoBasicInfo struct {
-	Repository struct {
-		Stargazers struct {
-			TotalCount int
-		}
-		Forks struct {
-			TotalCount int
-		}
-		Issues struct {
-			TotalCount int
-		}
-		PullRequests struct {
-			TotalCount int
-		}
-	} `graphql:"repository(owner: $owner, name: $name)"`
-}
-
-func GetRepoBasicInfo(ctx context.Context, owner, name string) (*RepoBasicInfo, error) {
-	query := &RepoBasicInfo{}
-	variables := map[string]interface{}{
-		"owner": githubv4.String(owner), // must use graphql type
-		"name":  githubv4.String(name),
-	}
-	if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
-		return nil, err
-	}
-	return query, nil
+// Init githubv4 graphql client
+func Init() {
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{
+			AccessToken: config.GlobalConfig.Backend.Token,
+		},
+	)
+	httpClient := oauth2.NewClient(context.Background(), src)
+	GlobalV4Client = githubv4.NewClient(httpClient)
 }
 
 type RepoName struct {
@@ -85,12 +60,36 @@ func QueryRepoNameByOrg(ctx context.Context, login string) ([]string, error) {
 	return res, nil
 }
 
-func Init() {
-	src := oauth2.StaticTokenSource(
-		&oauth2.Token{
-			AccessToken: config.GlobalConfig.Backend.Token,
-		},
-	)
-	httpClient := oauth2.NewClient(context.Background(), src)
-	GlobalV4Client = githubv4.NewClient(httpClient)
+type RepoInfo struct {
+	Repository struct {
+		Id    string
+		Owner struct {
+			Id string
+		}
+		Issues struct {
+			TotalCount int
+		}
+		PullRequests struct {
+			TotalCount int
+		}
+		Stargazers struct {
+			TotalCount int
+		}
+		Forks struct {
+			TotalCount int
+		}
+	} `graphql:"repository(owner: $owner, name: $name)"`
+}
+
+// QueryRepoInfo return the repo info based on the provided owner and name
+func QueryRepoInfo(ctx context.Context, owner, name string) (*RepoInfo, error) {
+	query := &RepoInfo{}
+	variables := map[string]interface{}{
+		"owner": githubv4.String(owner),
+		"name":  githubv4.String(name),
+	}
+	if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
+		return nil, err
+	}
+	return query, nil
 }

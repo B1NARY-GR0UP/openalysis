@@ -2,6 +2,8 @@ package task
 
 import (
 	"fmt"
+	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
+	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/robfig/cron/v3"
 	"testing"
 	"time"
@@ -28,4 +30,11 @@ func TestTask(t *testing.T) {
 	// 等待程序运行一段时间以便查看输出
 	// 由于是每分钟执行一次，因此可以注释掉此行以使程序一直运行
 	time.Sleep(5 * time.Minute)
+}
+
+func TestInit(t *testing.T) {
+	config.Init("../default.yaml")
+	graphql.Init()
+	Init()
+	fmt.Println(groups)
 }

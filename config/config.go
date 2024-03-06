@@ -1,6 +1,8 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+)
 
 var GlobalConfig = &Config{}
 
@@ -42,4 +44,13 @@ func (cfg *Config) ReadInConfig(path string) error {
 		return err
 	}
 	return nil
+}
+
+func Init(path string) {
+	if path == "" {
+		path = "./default.yaml"
+	}
+	if err := GlobalConfig.ReadInConfig(path); err != nil {
+		panic("failed to init configuration")
+	}
 }

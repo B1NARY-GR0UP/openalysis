@@ -26,14 +26,7 @@ func InitDB() {
 }
 
 func InitConfig(path string) {
-	var err error
-	if path == "" {
-		err = config.GlobalConfig.ReadInConfig("./default.yaml")
-	}
-	err = config.GlobalConfig.ReadInConfig(path)
-	if err != nil {
-		panic("failed to init configuration")
-	}
+	config.Init(path)
 }
 
 func AddGroups(groups ...config.Group) {
