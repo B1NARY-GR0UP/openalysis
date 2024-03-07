@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
+	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/db"
 )
@@ -11,22 +12,15 @@ import (
 // TODO: 配置文件读取，数据库读取，开始服务器等都应该在 api 层提供
 
 func Start(path string) {
-	InitConfig(path)
-	InitDB()
-
+	Init(path)
+	// TODO
 }
 
-func InitClient() {
-	graphql.Init()
-}
-
-// InitDB should execute after InitConfig due to DSN configuration
-func InitDB() {
-	db.Init()
-}
-
-func InitConfig(path string) {
+func Init(path string) {
 	config.Init(path)
+	db.Init()
+	graphql.Init()
+	rest.Init()
 }
 
 func AddGroups(groups ...config.Group) {
