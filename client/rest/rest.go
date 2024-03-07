@@ -9,6 +9,7 @@ import (
 
 var GlobalV3Client *github.Client
 
+// Init go-github rest client
 func Init() {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{

@@ -93,3 +93,17 @@ func QueryRepoInfo(ctx context.Context, owner, name string) (*RepoInfo, error) {
 	}
 	return query, nil
 }
+
+type IssueInfo struct {
+}
+
+func QueryIssueInfo(ctx context.Context, owner, name string) ([]*IssueInfo, error) {
+	return nil, nil
+}
+
+type PRInfo struct {
+}
+
+func QueryPRInfo(ctx context.Context, owner, name string) ([]*PRInfo, error) {
+	return nil, nil
+}

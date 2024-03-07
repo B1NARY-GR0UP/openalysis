@@ -18,6 +18,7 @@ func Init() {
 
 	// TODO: use mount
 	err = DB.AutoMigrate(
+		&model.Cursor{},
 		&model.Contributor{},
 		&model.Group{},
 		&model.Issue{},

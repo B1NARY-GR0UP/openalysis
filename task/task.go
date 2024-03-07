@@ -19,6 +19,17 @@ var groups map[string][]string
 
 // TODO: 记录每个小 task 的执行耗时
 
+func Start() {
+	errC := make(chan error)
+	// TODO
+
+	if err := util.WaitSignal(errC); err != nil {
+		slog.Error("receive close signal error", "signal", err.Error())
+		return
+	}
+	// TODO:
+}
+
 func Init() {
 	groups = make(map[string][]string)
 
