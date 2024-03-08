@@ -30,12 +30,14 @@ func Start() {
 	// TODO:
 }
 
-func Init() {
+func InitTask() {
 	groups = make(map[string][]string)
 
+	// collect all repos of each group
 	for _, group := range config.GlobalConfig.Groups {
 		repos := make([]string, 0)
 		repos = append(repos, group.Repos...)
+		// TODO: how to handle orgs??
 		for _, org := range group.Orgs {
 			res, err := graphql.QueryRepoNameByOrg(context.Background(), org)
 			if err != nil {
@@ -65,10 +67,23 @@ func Init() {
 				slog.Error("error get contributors", "err", err.Error())
 				continue
 			}
+			issues, issueEndCursor, err := graphql.QueryIssueInfo(context.Background(), owner, name, "")
+			if err != nil {
+				slog.Error("error query issue info", "err", err.Error())
+				continue
+			}
+			prs, prEndCursor, err := graphql.QueryPRInfo(context.Background(), owner, name, "")
+			if err != nil {
+				slog.Error("error query pr info", "err", err.Error())
+				continue
+			}
 		}
 		// TODO: 查询每个 repo 的 info
 		// TODO: 查询每个 repo 的 contributor 并计算 count
 		// TODO: 查询每个 repo 的 issue 和 pr
 		// TODO: 插入数据库, contributor, issue, pr 为最细粒度
 	}
+}
+
+func UpdateTask() {
 }

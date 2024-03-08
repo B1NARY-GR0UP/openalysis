@@ -35,6 +35,6 @@ func TestTask(t *testing.T) {
 func TestInit(t *testing.T) {
 	config.Init("../default.yaml")
 	graphql.Init()
-	Init()
+	InitTask()
 	fmt.Println(groups)
 }

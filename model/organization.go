@@ -8,6 +8,7 @@ type Organization struct {
 
 	Login  string
 	NodeID string
+	// TODO: name (public profile name)
 
 	IssueCount       int
 	PullRequestCount int

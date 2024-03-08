@@ -19,6 +19,18 @@ func TestQueryRepoInfo(t *testing.T) {
 	fmt.Println(info)
 }
 
+func TestQueryOrgInfo(t *testing.T) {
+	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
+		panic(err.Error())
+	}
+	Init()
+	info, err := QueryOrgInfo(context.Background(), "cloudwego")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(info)
+}
+
 func TestQueryRepoNameByOrg(t *testing.T) {
 	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
 		panic(err.Error())

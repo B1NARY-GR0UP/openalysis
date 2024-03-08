@@ -97,6 +97,27 @@ func QueryRepoInfo(ctx context.Context, owner, name string) (Repo, error) {
 	return query.Repository, nil
 }
 
+type OrgInfo struct {
+	Organization Org `graphql:"organization(login: $login)"`
+}
+
+type Org struct {
+	ID    string
+	Login string
+}
+
+func QueryOrgInfo(ctx context.Context, login string) (Org, error) {
+	query := &OrgInfo{}
+	variables := map[string]interface{}{
+		"login": githubv4.String(login),
+	}
+	err := GlobalV4Client.Query(ctx, query, variables)
+	if err != nil {
+		return Org{}, err
+	}
+	return query.Organization, nil
+}
+
 type IssueInfo struct {
 	Repository struct {
 		Issues struct {
