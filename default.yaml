@@ -31,6 +31,5 @@ datasource:
     password: "114514"
     database: "openalysis"
 backend:
-  # api pull frequency (unit: hour)
-  frequency: 3
+  frequency: "* * * *"
   token: ""

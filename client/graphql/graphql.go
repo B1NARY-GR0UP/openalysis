@@ -5,6 +5,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
+	"time"
 )
 
 var GlobalV4Client *githubv4.Client
@@ -61,49 +62,150 @@ func QueryRepoNameByOrg(ctx context.Context, login string) ([]string, error) {
 }
 
 type RepoInfo struct {
-	Repository struct {
-		Id    string
-		Owner struct {
-			Id string
-		}
-		Issues struct {
-			TotalCount int
-		}
-		PullRequests struct {
-			TotalCount int
-		}
-		Stargazers struct {
-			TotalCount int
-		}
-		Forks struct {
-			TotalCount int
-		}
-	} `graphql:"repository(owner: $owner, name: $name)"`
+	Repository Repo `graphql:"repository(owner: $owner, name: $name)"`
+}
+
+type Repo struct {
+	ID    string
+	Owner struct {
+		ID string
+	}
+	Issues struct {
+		TotalCount int
+	}
+	PullRequests struct {
+		TotalCount int
+	}
+	Stargazers struct {
+		TotalCount int
+	}
+	Forks struct {
+		TotalCount int
+	}
 }
 
 // QueryRepoInfo return the repo info based on the provided owner and name
-func QueryRepoInfo(ctx context.Context, owner, name string) (*RepoInfo, error) {
+func QueryRepoInfo(ctx context.Context, owner, name string) (Repo, error) {
 	query := &RepoInfo{}
 	variables := map[string]interface{}{
 		"owner": githubv4.String(owner),
 		"name":  githubv4.String(name),
 	}
 	if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
-		return nil, err
+		return Repo{}, err
 	}
-	return query, nil
+	return query.Repository, nil
 }
 
 type IssueInfo struct {
+	Repository struct {
+		Issues struct {
+			PageInfo struct {
+				HasNextPage bool
+				EndCursor   string
+			}
+			Nodes []Issue
+		} `graphql:"issues(first: $first, after: $after)"`
+	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 
-func QueryIssueInfo(ctx context.Context, owner, name string) ([]*IssueInfo, error) {
-	return nil, nil
+type Issue struct {
+	ID     string
+	Author struct {
+		Login string
+		User  struct { // TODO: handle other types (e.g. bot)
+			ID string
+		} `graphql:"... on User"`
+	}
+	Repository struct {
+		ID string
+	}
+	Number    int
+	State     string
+	CreatedAt time.Time
+	ClosedAt  time.Time
+}
+
+// QueryIssueInfo return issues according to the repo if endCursor is empty
+// it will return the updated issue since last update if endCursor is provided
+func QueryIssueInfo(ctx context.Context, owner, name, endCursor string) ([]Issue, error) {
+	query := &IssueInfo{}
+	variables := map[string]interface{}{
+		"owner": githubv4.String(owner),
+		"name":  githubv4.String(name),
+		"first": githubv4.Int(100),
+		"after": (*githubv4.String)(nil),
+	}
+	if endCursor != "" {
+		variables["after"] = githubv4.NewString(githubv4.String(endCursor))
+	}
+	res := make([]Issue, 0)
+	for {
+		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
+			return nil, err
+		}
+		res = append(res, query.Repository.Issues.Nodes...)
+		if !query.Repository.Issues.PageInfo.HasNextPage {
+			break
+		}
+		variables["after"] = githubv4.NewString(githubv4.String(query.Repository.Issues.PageInfo.EndCursor))
+	}
+	return res, nil
 }
 
 type PRInfo struct {
+	Repository struct {
+		PullRequests struct {
+			PageInfo struct {
+				HasNextPage bool
+				EndCursor   string
+			}
+			Nodes []PR
+		} `graphql:"pullRequests(first: $first, after: $after)"`
+	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 
-func QueryPRInfo(ctx context.Context, owner, name string) ([]*PRInfo, error) {
-	return nil, nil
+type PR struct {
+	ID     string
+	Author struct {
+		Login string
+		User  struct { // TODO: handle other types (e.g. bot)
+			ID string
+		} `graphql:"... on User"`
+	}
+	Repository struct {
+		ID string
+	}
+	Number    int
+	State     string
+	CreatedAt time.Time
+	MergedAt  time.Time
+	ClosedAt  time.Time
+}
+
+// QueryPRInfo return pull requests according to the repo if endCursor is empty
+// it will return the updated pull requests since last update if endCursor is provided
+func QueryPRInfo(ctx context.Context, owner, name, endCursor string) ([]PR, error) {
+	query := &PRInfo{}
+	variables := map[string]interface{}{
+		"owner": githubv4.String(owner),
+		"name":  githubv4.String(name),
+		"first": githubv4.Int(100),
+		"after": (*githubv4.String)(nil),
+	}
+	if endCursor != "" {
+		variables["after"] = githubv4.NewString(githubv4.String(endCursor))
+	}
+	res := make([]PR, 0)
+	for {
+		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
+			return nil, err
+		}
+		res = append(res, query.Repository.PullRequests.Nodes...)
+		if !query.Repository.PullRequests.PageInfo.HasNextPage {
+			break
+		}
+		variables["after"] = githubv4.NewString(githubv4.String(query.Repository.PullRequests.PageInfo.EndCursor))
+	}
+	return res, nil
 }

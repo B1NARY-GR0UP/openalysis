@@ -31,7 +31,7 @@ type MySQL struct {
 }
 
 type Backend struct {
-	Frequency int    `yaml:"frequency"` // Frequency api pull frequency (unit: hour)
+	Frequency string `yaml:"frequency"` // Frequency api pull frequency
 	Token     string `yaml:"token"`
 }
 
