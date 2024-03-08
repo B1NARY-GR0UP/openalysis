@@ -31,5 +31,5 @@ datasource:
     password: "114514"
     database: "openalysis"
 backend:
-  frequency: "* * * *"
+  frequency: "* * * *" # TODO: default "@daily"
   token: ""

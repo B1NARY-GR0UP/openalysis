@@ -14,7 +14,7 @@ var closeC chan struct{}
 
 // groups
 // key: group name
-// value: slice of repos
+// value: slice of repos in `org/repo` format
 var groups map[string][]string
 
 // TODO: 记录每个小 task 的执行耗时

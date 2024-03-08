@@ -36,13 +36,23 @@ func TestQueryIssueInfo(t *testing.T) {
 		panic(err.Error())
 	}
 	Init()
-	issues, err := QueryIssueInfo(context.Background(), "cloudwego", "hertz", "")
+	//issues, endCursor, err := QueryIssueInfo(context.Background(), "rainiring", "test", "")
+	//if err != nil {
+	//	fmt.Println(err.Error())
+	//}
+	//fmt.Println(len(issues))
+	//fmt.Println(endCursor) // use for next update
+	//for _, issue := range issues {
+	//	fmt.Println(issue.Number)
+	//}
+
+	issues, _, err := QueryIssueInfo(context.Background(), "rainiring", "test", "Y3Vyc29yOnYyOpHOgar3bA==")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	fmt.Println(len(issues))
 	for _, issue := range issues {
-		fmt.Println(issue)
+		fmt.Println(issue.Number)
 	}
 }
 
@@ -51,7 +61,7 @@ func TestQueryPRInfo(t *testing.T) {
 		panic(err.Error())
 	}
 	Init()
-	prs, err := QueryPRInfo(context.Background(), "cloudwego", "hertz", "")
+	prs, _, err := QueryPRInfo(context.Background(), "cloudwego", "hertz", "")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
