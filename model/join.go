@@ -10,12 +10,16 @@ type GroupsOrganizations struct {
 	OrgNodeID string
 }
 
-type ContributorsIssues struct {
-	ContribNodeID string
-	IssueNodeID   string
+// IssueAssignees an issue can have multi assignees
+type IssueAssignees struct {
+	IssueNodeID    string
+	AssigneeNodeID string
+	AssigneeLogin  string
 }
 
-type ContributorsPullRequests struct {
-	ContribNodeID string
-	PRNodeID      string
+// PullRequestAssignees a pr can have multi reviewers
+type PullRequestAssignees struct {
+	PullRequestNodeID string
+	AssigneeNodeID    string
+	AssigneeLogin     string
 }

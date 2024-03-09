@@ -6,16 +6,9 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/util"
+	"github.com/google/go-github/v60/github"
 	"log/slog"
 )
-
-// TODO: listen to close signal
-var closeC chan struct{}
-
-// groups
-// key: group name
-// value: slice of repos in `org/repo` format
-var groups map[string][]string
 
 // TODO: 记录每个小 task 的执行耗时
 
@@ -31,59 +24,133 @@ func Start() {
 }
 
 func InitTask() {
-	groups = make(map[string][]string)
-
-	// collect all repos of each group
+	// handle groups
 	for _, group := range config.GlobalConfig.Groups {
-		repos := make([]string, 0)
-		repos = append(repos, group.Repos...)
-		// TODO: how to handle orgs??
-		for _, org := range group.Orgs {
-			res, err := graphql.QueryRepoNameByOrg(context.Background(), org)
+		var (
+			groupIssueCount       int
+			groupPullRequestCount int
+			groupStarCount        int
+			groupForkCount        int
+			groupContributorCount int
+		)
+		// handle orgs
+		for _, login := range group.Orgs {
+			// org data
+			org, err := graphql.QueryOrgInfo(context.Background(), login)
+			if err != nil {
+				slog.Error("error query org info", "err", err.Error())
+				continue
+			}
+			repos, err := graphql.QueryRepoNameByOrg(context.Background(), login)
 			if err != nil {
 				slog.Error("error query repo name by org", "err", err.Error())
 				continue
 			}
-			repos = append(repos, res...)
+			var (
+				orgIssueCount       int
+				orgPullRequestCount int
+				orgStarCount        int
+				orgForkCount        int
+				orgContributorCount int
+			)
+			// handle repos in org
+			for _, nameWithOwner := range repos {
+				res, err := InitRepoTask(nameWithOwner)
+				if err != nil {
+					slog.Error("error execute init repo task", "err", err)
+					continue
+				}
+				// org counting data
+				{
+					orgIssueCount += res.repo.Issues.TotalCount
+					orgPullRequestCount += res.repo.PullRequests.TotalCount
+					orgStarCount += res.repo.Stargazers.TotalCount
+					orgForkCount += res.repo.Forks.TotalCount
+					orgContributorCount += res.contributorCount
+				}
+				// TODO: insert db repositories, issues, pullrequests, contributors, cursors
+			}
+			// org in group counting data
+			{
+				groupIssueCount += orgIssueCount
+				groupPullRequestCount += orgPullRequestCount
+				groupStarCount += orgStarCount
+				groupForkCount += orgForkCount
+				groupContributorCount += orgContributorCount
+			}
+			// TODO: inset db organizations
 		}
-		groups[group.Name] = repos
-	}
-
-	// handle all repos in each group
-	for groupName, repos := range groups {
-		for _, repo := range repos {
-			owner, name := util.SplitNameWithOwner(repo)
-			if owner == "" || name == "" {
-				slog.Error("error split repo name")
-				continue
-			}
-			repoInfo, err := graphql.QueryRepoInfo(context.Background(), owner, name)
+		// handle repos in group
+		for _, nameWithOwner := range group.Repos {
+			res, err := InitRepoTask(nameWithOwner)
 			if err != nil {
-				slog.Error("error query repo info", "err", err.Error())
+				slog.Error("error execute init repo task", "err", err)
 				continue
 			}
-			contributors, contributorsCount, err := rest.GetContributorsByRepo(context.Background(), owner, name)
-			if err != nil {
-				slog.Error("error get contributors", "err", err.Error())
-				continue
+			// repo in group counting data
+			{
+				groupIssueCount += res.repo.Issues.TotalCount
+				groupPullRequestCount += res.repo.PullRequests.TotalCount
+				groupStarCount += res.repo.Stargazers.TotalCount
+				groupForkCount += res.repo.Forks.TotalCount
+				groupContributorCount += res.contributorCount
 			}
-			issues, issueEndCursor, err := graphql.QueryIssueInfo(context.Background(), owner, name, "")
-			if err != nil {
-				slog.Error("error query issue info", "err", err.Error())
-				continue
-			}
-			prs, prEndCursor, err := graphql.QueryPRInfo(context.Background(), owner, name, "")
-			if err != nil {
-				slog.Error("error query pr info", "err", err.Error())
-				continue
-			}
+			// TODO: insert db repositories
 		}
-		// TODO: 查询每个 repo 的 info
-		// TODO: 查询每个 repo 的 contributor 并计算 count
-		// TODO: 查询每个 repo 的 issue 和 pr
-		// TODO: 插入数据库, contributor, issue, pr 为最细粒度
+		// TODO: insert db groups
 	}
 }
 
 func UpdateTask() {
+}
+
+// InitRepoTask fetch repo data
+func InitRepoTask(nameWithOwner string) (*struct {
+	repo             graphql.Repo
+	issues           []graphql.Issue
+	issueEndCursor   string
+	prs              []graphql.PR
+	prEndCursor      string
+	contributors     []*github.Contributor
+	contributorCount int
+}, error) {
+	owner, name := util.SplitNameWithOwner(nameWithOwner)
+	// TODO: use goroutine to optimize
+	// repo data
+	repo, err := graphql.QueryRepoInfo(context.Background(), owner, name)
+	if err != nil {
+		return nil, err
+	}
+	// repo issue data
+	issues, issueEndCursor, err := graphql.QueryIssueInfo(context.Background(), owner, name, "")
+	if err != nil {
+		return nil, err
+	}
+	// repo pr data
+	prs, prEndCursor, err := graphql.QueryPRInfo(context.Background(), owner, name, "")
+	if err != nil {
+		return nil, err
+	}
+	// repo contributor data
+	contributors, contributorCount, err := rest.GetContributorsByRepo(context.Background(), owner, name)
+	if err != nil {
+		return nil, err
+	}
+	return &struct {
+		repo             graphql.Repo
+		issues           []graphql.Issue
+		issueEndCursor   string
+		prs              []graphql.PR
+		prEndCursor      string
+		contributors     []*github.Contributor
+		contributorCount int
+	}{
+		repo:             repo,
+		issues:           issues,
+		issueEndCursor:   issueEndCursor,
+		prs:              prs,
+		prEndCursor:      prEndCursor,
+		contributors:     contributors,
+		contributorCount: contributorCount,
+	}, nil
 }

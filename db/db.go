@@ -27,8 +27,8 @@ func Init() {
 		&model.Repository{},
 		&model.GroupsOrganizations{},
 		&model.GroupsRepositories{},
-		&model.ContributorsIssues{},
-		&model.ContributorsPullRequests{},
+		&model.IssueAssignees{},
+		&model.PullRequestAssignees{},
 	)
 	if err != nil {
 		panic("failed to migrate tables")

@@ -43,20 +43,24 @@ func QueryRepoNameByOrg(ctx context.Context, login string) ([]string, error) {
 		"first": githubv4.Int(100),
 		"after": (*githubv4.String)(nil),
 	}
-	nodes := make([]struct{ NameWithOwner string }, 0)
-	names := make([]string, 0)
+	var (
+		repos []struct {
+			NameWithOwner string
+		}
+		names []string
+	)
 	for {
 		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
 			return nil, err
 		}
-		nodes = append(nodes, query.Organization.Repositories.Nodes...)
+		repos = append(repos, query.Organization.Repositories.Nodes...)
 		if !query.Organization.Repositories.PageInfo.HasNextPage {
 			break
 		}
 		variables["after"] = githubv4.NewString(githubv4.String(query.Organization.Repositories.PageInfo.EndCursor))
 	}
-	for _, node := range nodes {
-		names = append(names, node.NameWithOwner)
+	for _, repo := range repos {
+		names = append(names, repo.NameWithOwner)
 	}
 	return names, nil
 }
@@ -160,7 +164,7 @@ func QueryIssueInfo(ctx context.Context, owner, name, endCursor string) ([]Issue
 	if endCursor != "" {
 		variables["after"] = githubv4.NewString(githubv4.String(endCursor))
 	}
-	issues := make([]Issue, 0)
+	var issues []Issue
 	for {
 		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
 			return nil, "", err
@@ -217,7 +221,7 @@ func QueryPRInfo(ctx context.Context, owner, name, endCursor string) ([]PR, stri
 	if endCursor != "" {
 		variables["after"] = githubv4.NewString(githubv4.String(endCursor))
 	}
-	prs := make([]PR, 0)
+	var prs []PR
 	for {
 		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
 			return nil, "", err
@@ -230,3 +234,5 @@ func QueryPRInfo(ctx context.Context, owner, name, endCursor string) ([]PR, stri
 	}
 	return prs, query.Repository.PullRequests.PageInfo.EndCursor, nil
 }
+
+// TODO: query issue and pr assignees
