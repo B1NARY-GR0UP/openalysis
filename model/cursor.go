@@ -4,6 +4,7 @@ import "gorm.io/gorm"
 
 type Cursor struct {
 	gorm.Model
-	IssueEndCursor string
-	PREndCursor    string
+	EndCursor string
+	// ISSUE | PR
+	Type string
 }

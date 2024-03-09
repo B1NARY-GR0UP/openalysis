@@ -9,6 +9,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	golang.org/x/oauth2 v0.17.0
+	golang.org/x/sync v0.6.0
 	gorm.io/driver/mysql v1.5.4
 	gorm.io/gorm v1.25.7
 )

@@ -1,12 +1,12 @@
 package model
 
 type GroupsRepositories struct {
-	GroupID    uint
+	GroupName  string
 	RepoNodeID string
 }
 
 type GroupsOrganizations struct {
-	GroupID   uint
+	GroupName string
 	OrgNodeID string
 }
 

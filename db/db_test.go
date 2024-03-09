@@ -55,8 +55,8 @@ func TestCreateRepo(t *testing.T) {
 		&model.Repository{},
 		&model.GroupsOrganizations{},
 		&model.GroupsRepositories{},
-		&model.ContributorsIssues{},
-		&model.ContributorsPullRequests{},
+		&model.IssueAssignees{},
+		&model.PullRequestAssignees{},
 	)
 
 	//err = DB.SetupJoinTable(&Person{}, "Addresses", &PersonAddress{})

@@ -27,7 +27,7 @@ func GetContributorsByRepo(ctx context.Context, owner, name string) ([]*github.C
 			PerPage: 100,
 		},
 	}
-	res := make([]*github.Contributor, 0)
+	var res []*github.Contributor
 	for {
 		contributors, resp, err := GlobalV3Client.Repositories.ListContributors(ctx, owner, name, opts)
 		if err != nil {

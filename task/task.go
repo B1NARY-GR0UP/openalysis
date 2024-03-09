@@ -7,6 +7,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/google/go-github/v60/github"
+	"golang.org/x/sync/errgroup"
 	"log/slog"
 )
 
@@ -78,7 +79,7 @@ func InitTask() {
 				groupForkCount += orgForkCount
 				groupContributorCount += orgContributorCount
 			}
-			// TODO: inset db organizations
+			// TODO: insert db organizations
 		}
 		// handle repos in group
 		for _, nameWithOwner := range group.Repos {
@@ -105,6 +106,7 @@ func UpdateTask() {
 }
 
 // InitRepoTask fetch repo data
+// TODO: test needed
 func InitRepoTask(nameWithOwner string) (*struct {
 	repo             graphql.Repo
 	issues           []graphql.Issue
@@ -114,29 +116,8 @@ func InitRepoTask(nameWithOwner string) (*struct {
 	contributors     []*github.Contributor
 	contributorCount int
 }, error) {
-	owner, name := util.SplitNameWithOwner(nameWithOwner)
-	// TODO: use goroutine to optimize
-	// repo data
-	repo, err := graphql.QueryRepoInfo(context.Background(), owner, name)
-	if err != nil {
-		return nil, err
-	}
-	// repo issue data
-	issues, issueEndCursor, err := graphql.QueryIssueInfo(context.Background(), owner, name, "")
-	if err != nil {
-		return nil, err
-	}
-	// repo pr data
-	prs, prEndCursor, err := graphql.QueryPRInfo(context.Background(), owner, name, "")
-	if err != nil {
-		return nil, err
-	}
-	// repo contributor data
-	contributors, contributorCount, err := rest.GetContributorsByRepo(context.Background(), owner, name)
-	if err != nil {
-		return nil, err
-	}
-	return &struct {
+	g := new(errgroup.Group)
+	var res *struct {
 		repo             graphql.Repo
 		issues           []graphql.Issue
 		issueEndCursor   string
@@ -144,13 +125,45 @@ func InitRepoTask(nameWithOwner string) (*struct {
 		prEndCursor      string
 		contributors     []*github.Contributor
 		contributorCount int
-	}{
-		repo:             repo,
-		issues:           issues,
-		issueEndCursor:   issueEndCursor,
-		prs:              prs,
-		prEndCursor:      prEndCursor,
-		contributors:     contributors,
-		contributorCount: contributorCount,
-	}, nil
+	}
+	owner, name := util.SplitNameWithOwner(nameWithOwner)
+	g.Go(func() error {
+		// repo data
+		repo, err := graphql.QueryRepoInfo(context.Background(), owner, name)
+		if err == nil {
+			res.repo = repo
+		}
+		return err
+	})
+	g.Go(func() error {
+		// repo issue data
+		issues, issueEndCursor, err := graphql.QueryIssueInfo(context.Background(), owner, name, "")
+		if err == nil {
+			res.issues = issues
+			res.issueEndCursor = issueEndCursor
+		}
+		return err
+	})
+	g.Go(func() error {
+		// repo pr data
+		prs, prEndCursor, err := graphql.QueryPRInfo(context.Background(), owner, name, "")
+		if err == nil {
+			res.prs = prs
+			res.prEndCursor = prEndCursor
+		}
+		return err
+	})
+	g.Go(func() error {
+		// repo contributor data
+		contributors, contributorCount, err := rest.GetContributorsByRepo(context.Background(), owner, name)
+		if err == nil {
+			res.contributors = contributors
+			res.contributorCount = contributorCount
+		}
+		return err
+	})
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
