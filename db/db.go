@@ -49,8 +49,8 @@ func CreateOrganizations(ctx context.Context, orgs []*model.Organization) error 
 	return DB.WithContext(ctx).Create(orgs).Error
 }
 
-func CreateRepositories(ctx context.Context, repos []*model.Repository) error {
-	return DB.WithContext(ctx).Create(repos).Error
+func CreateRepository(ctx context.Context, repo *model.Repository) error {
+	return DB.WithContext(ctx).Create(repo).Error
 }
 
 func CreateGroupsOrganizations(ctx context.Context, join *model.GroupsOrganizations) error {
