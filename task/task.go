@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
@@ -38,6 +39,8 @@ func InitTask() {
 		for _, login := range group.Orgs {
 			// org data
 			org, err := graphql.QueryOrgInfo(context.Background(), login)
+			// TODO: for test, remove needed
+			fmt.Println(org)
 			if err != nil {
 				slog.Error("error query org info", "err", err.Error())
 				continue
@@ -117,7 +120,7 @@ func InitRepoTask(nameWithOwner string) (*struct {
 	contributorCount int
 }, error) {
 	g := new(errgroup.Group)
-	var res *struct {
+	res := new(struct {
 		repo             graphql.Repo
 		issues           []graphql.Issue
 		issueEndCursor   string
@@ -125,18 +128,18 @@ func InitRepoTask(nameWithOwner string) (*struct {
 		prEndCursor      string
 		contributors     []*github.Contributor
 		contributorCount int
-	}
+	})
 	owner, name := util.SplitNameWithOwner(nameWithOwner)
+	// repo data
 	g.Go(func() error {
-		// repo data
 		repo, err := graphql.QueryRepoInfo(context.Background(), owner, name)
 		if err == nil {
 			res.repo = repo
 		}
 		return err
 	})
+	// repo issue data
 	g.Go(func() error {
-		// repo issue data
 		issues, issueEndCursor, err := graphql.QueryIssueInfo(context.Background(), owner, name, "")
 		if err == nil {
 			res.issues = issues
@@ -144,8 +147,8 @@ func InitRepoTask(nameWithOwner string) (*struct {
 		}
 		return err
 	})
+	// repo pr data
 	g.Go(func() error {
-		// repo pr data
 		prs, prEndCursor, err := graphql.QueryPRInfo(context.Background(), owner, name, "")
 		if err == nil {
 			res.prs = prs
@@ -153,8 +156,8 @@ func InitRepoTask(nameWithOwner string) (*struct {
 		}
 		return err
 	})
+	// repo contributor data
 	g.Go(func() error {
-		// repo contributor data
 		contributors, contributorCount, err := rest.GetContributorsByRepo(context.Background(), owner, name)
 		if err == nil {
 			res.contributors = contributors

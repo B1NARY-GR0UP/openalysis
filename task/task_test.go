@@ -32,9 +32,14 @@ func TestTask(t *testing.T) {
 	time.Sleep(5 * time.Minute)
 }
 
-func TestInit(t *testing.T) {
-	config.Init("../default.yaml")
+func TestInitRepoTask(t *testing.T) {
+	if err := config.GlobalConfig.ReadInConfig("../default.yaml"); err != nil {
+		panic(err.Error())
+	}
 	graphql.Init()
-	InitTask()
-	fmt.Println(groups)
+	res, err := InitRepoTask("cloudwego/hertz")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(res)
 }
