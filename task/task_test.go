@@ -3,6 +3,7 @@ package task
 import (
 	"fmt"
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
+	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/robfig/cron/v3"
 	"testing"
@@ -37,6 +38,7 @@ func TestInitRepoTask(t *testing.T) {
 		panic(err.Error())
 	}
 	graphql.Init()
+	rest.Init()
 	res, err := InitRepoTask("cloudwego/hertz")
 	if err != nil {
 		fmt.Println(err)

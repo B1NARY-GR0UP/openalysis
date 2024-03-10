@@ -109,7 +109,6 @@ func UpdateTask() {
 }
 
 // InitRepoTask fetch repo data
-// TODO: test needed
 func InitRepoTask(nameWithOwner string) (*struct {
 	repo             graphql.Repo
 	issues           []graphql.Issue
