@@ -8,6 +8,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/db"
 	"github.com/B1NARY-GR0UP/openalysis/model"
 	"github.com/B1NARY-GR0UP/openalysis/util"
+	"github.com/robfig/cron/v3"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 )
@@ -16,13 +17,20 @@ import (
 
 func Start() {
 	errC := make(chan error)
-	// TODO
+
+	c := cron.New()
+	if _, err := c.AddFunc(config.GlobalConfig.Backend.Frequency, func() {}); err != nil {
+		slog.Error("error doing cron", "err", err)
+		errC <- err
+	}
+	c.Start()
+	defer c.Stop()
 
 	if err := util.WaitSignal(errC); err != nil {
 		slog.Error("receive close signal error", "signal", err.Error())
 		return
 	}
-	// TODO:
+	slog.Info("openalysis service stopped")
 }
 
 func InitTask(ctx context.Context) {
@@ -56,6 +64,7 @@ func InitTask(ctx context.Context) {
 				continue
 			}
 			// handle repos in org
+			// TODO: use errgroup to optimize performance
 			for _, nameWithOwner := range repos {
 				owner, name := util.SplitNameWithOwner(nameWithOwner)
 				rd := &RepoData{
@@ -151,6 +160,8 @@ func InitTask(ctx context.Context) {
 		}
 	}
 }
+
+// TODO: update task 是不是可以简化流程，例如在 init task 时提前把所有 repo 存储到内存
 
 func UpdateTask() {
 }
