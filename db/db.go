@@ -62,10 +62,16 @@ func CreateGroupsRepositories(ctx context.Context, join *model.GroupsRepositorie
 }
 
 func CreateIssues(ctx context.Context, issues []*model.Issue) error {
+	if issues == nil || len(issues) == 0 {
+		return nil
+	}
 	return DB.WithContext(ctx).Create(issues).Error
 }
 
 func CreatePullRequests(ctx context.Context, prs []*model.PullRequest) error {
+	if prs == nil || len(prs) == 0 {
+		return nil
+	}
 	return DB.WithContext(ctx).Create(prs).Error
 }
 

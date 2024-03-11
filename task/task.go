@@ -78,6 +78,7 @@ func InitTask(ctx context.Context) {
 					orgContributorCount += rd.ContributorCount
 				}
 			}
+			// TODO: both success or failed
 			if err := db.CreateOrganization(ctx, &model.Organization{
 				Login:            org.Login,
 				NodeID:           org.ID,
@@ -116,6 +117,7 @@ func InitTask(ctx context.Context) {
 				slog.Error("error fetch repo data", "err", err)
 				continue
 			}
+			// TODO: both success or failed
 			if err := CreateRepoData(ctx, rd); err != nil {
 				slog.Error("error create repo data", "err", err)
 				continue
@@ -135,6 +137,7 @@ func InitTask(ctx context.Context) {
 				groupContributorCount += rd.ContributorCount
 			}
 		}
+		// TODO: 先插入 group 名，再插入 count
 		if err := db.CreateGroup(ctx, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupIssueCount,
@@ -251,14 +254,16 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	}
 	if err := db.CreateCursor(context.Background(), &model.Cursor{
-		EndCursor: rd.IssueEndCursor,
-		Type:      model.CursorTypeIssue,
+		RepoNodeID: rd.Repo.ID,
+		EndCursor:  rd.IssueEndCursor,
+		Type:       model.CursorTypeIssue,
 	}); err != nil {
 		return err
 	}
 	if err := db.CreateCursor(context.Background(), &model.Cursor{
-		EndCursor: rd.PREndCursor,
-		Type:      model.CursorTypePR,
+		RepoNodeID: rd.Repo.ID,
+		EndCursor:  rd.PREndCursor,
+		Type:       model.CursorTypePR,
 	}); err != nil {
 		return err
 	}

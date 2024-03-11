@@ -1,10 +1,12 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
+	"github.com/B1NARY-GR0UP/openalysis/db"
 	"github.com/robfig/cron/v3"
 	"testing"
 	"time"
@@ -33,15 +35,10 @@ func TestTask(t *testing.T) {
 	time.Sleep(5 * time.Minute)
 }
 
-func TestInitRepoTask(t *testing.T) {
-	if err := config.GlobalConfig.ReadInConfig("../default.yaml"); err != nil {
-		panic(err.Error())
-	}
+func TestInitTask(t *testing.T) {
+	config.Init("../default.yaml")
+	db.Init()
 	graphql.Init()
 	rest.Init()
-	res, err := InitRepoTask("cloudwego/hertz")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(res)
+	InitTask(context.Background())
 }

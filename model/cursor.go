@@ -9,7 +9,8 @@ const (
 
 type Cursor struct {
 	gorm.Model
-	EndCursor string
+	RepoNodeID string
+	EndCursor  string
 	// ISSUE | PR
 	Type string
 }
