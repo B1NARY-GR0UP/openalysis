@@ -137,7 +137,7 @@ func InitTask(ctx context.Context) {
 				groupContributorCount += rd.ContributorCount
 			}
 		}
-		// TODO: 先插入 group 名，再插入 count
+		// TODO: insert groups first, then update counts
 		if err := db.CreateGroup(ctx, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupIssueCount,

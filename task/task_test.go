@@ -40,5 +40,5 @@ func TestInitTask(t *testing.T) {
 	db.Init()
 	graphql.Init()
 	rest.Init()
-	InitTask(context.Background())
+	InitTask(context.Background()) // 7min 78s (467.58s)
 }
