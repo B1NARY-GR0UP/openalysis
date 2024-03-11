@@ -13,3 +13,13 @@ type Group struct {
 	ForkCount        int
 	ContributorCount int
 }
+
+type GroupsRepositories struct {
+	GroupName  string
+	RepoNodeID string
+}
+
+type GroupsOrganizations struct {
+	GroupName string
+	OrgNodeID string
+}

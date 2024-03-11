@@ -8,7 +8,6 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/db"
 	"github.com/B1NARY-GR0UP/openalysis/model"
 	"github.com/B1NARY-GR0UP/openalysis/util"
-	"github.com/google/go-github/v60/github"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 )
@@ -36,8 +35,15 @@ func InitTask(ctx context.Context) {
 			groupForkCount        int
 			groupContributorCount int
 		)
-		// handle orgs
+		// handle orgs in groups
 		for _, login := range group.Orgs {
+			var (
+				orgIssueCount       int
+				orgPullRequestCount int
+				orgStarCount        int
+				orgForkCount        int
+				orgContributorCount int
+			)
 			// org data
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
@@ -49,13 +55,6 @@ func InitTask(ctx context.Context) {
 				slog.Error("error query repo name by org", "err", err.Error())
 				continue
 			}
-			var (
-				orgIssueCount       int
-				orgPullRequestCount int
-				orgStarCount        int
-				orgForkCount        int
-				orgContributorCount int
-			)
 			// handle repos in org
 			for _, nameWithOwner := range repos {
 				owner, name := util.SplitNameWithOwner(nameWithOwner)
@@ -71,7 +70,6 @@ func InitTask(ctx context.Context) {
 					slog.Error("error create repo data", "err", err)
 					continue
 				}
-				// org counting data
 				{
 					orgIssueCount += rd.Repo.Issues.TotalCount
 					orgPullRequestCount += rd.Repo.PullRequests.TotalCount
@@ -80,7 +78,25 @@ func InitTask(ctx context.Context) {
 					orgContributorCount += rd.ContributorCount
 				}
 			}
-			// org in group counting data
+			if err := db.CreateOrganization(ctx, &model.Organization{
+				Login:            org.Login,
+				NodeID:           org.ID,
+				IssueCount:       orgIssueCount,
+				PullRequestCount: orgPullRequestCount,
+				StarCount:        orgStarCount,
+				ForkCount:        orgForkCount,
+				ContributorCount: orgContributorCount,
+			}); err != nil {
+				slog.Error("error create org", "err", err)
+				continue
+			}
+			if err := db.CreateGroupsOrganizations(ctx, &model.GroupsOrganizations{
+				GroupName: group.Name,
+				OrgNodeID: org.ID,
+			}); err != nil {
+				slog.Error("error create group org join", "err", err)
+				continue
+			}
 			{
 				groupIssueCount += orgIssueCount
 				groupPullRequestCount += orgPullRequestCount
@@ -88,7 +104,6 @@ func InitTask(ctx context.Context) {
 				groupForkCount += orgForkCount
 				groupContributorCount += orgContributorCount
 			}
-			// TODO: insert db organizations
 		}
 		// handle repos in group
 		for _, nameWithOwner := range group.Repos {
@@ -101,7 +116,17 @@ func InitTask(ctx context.Context) {
 				slog.Error("error fetch repo data", "err", err)
 				continue
 			}
-			// repo in group counting data
+			if err := CreateRepoData(ctx, rd); err != nil {
+				slog.Error("error create repo data", "err", err)
+				continue
+			}
+			if err := db.CreateGroupsRepositories(ctx, &model.GroupsRepositories{
+				GroupName:  group.Name,
+				RepoNodeID: rd.Repo.ID,
+			}); err != nil {
+				slog.Error("error create group repo join", "err", err)
+				continue
+			}
 			{
 				groupIssueCount += rd.Repo.Issues.TotalCount
 				groupPullRequestCount += rd.Repo.PullRequests.TotalCount
@@ -109,9 +134,18 @@ func InitTask(ctx context.Context) {
 				groupForkCount += rd.Repo.Forks.TotalCount
 				groupContributorCount += rd.ContributorCount
 			}
-			// TODO: insert db repositories
 		}
-		// TODO: insert db groups
+		if err := db.CreateGroup(ctx, &model.Group{
+			Name:             group.Name,
+			IssueCount:       groupIssueCount,
+			PullRequestCount: groupPullRequestCount,
+			StarCount:        groupStarCount,
+			ForkCount:        groupForkCount,
+			ContributorCount: groupContributorCount,
+		}); err != nil {
+			slog.Error("error create group", "err", err)
+			continue
+		}
 	}
 }
 
@@ -126,7 +160,7 @@ type RepoData struct {
 	IssueEndCursor   string
 	PRs              []graphql.PR
 	PREndCursor      string
-	Contributors     []*github.Contributor
+	Contributors     []*model.Contributor
 	ContributorCount int
 }
 
@@ -156,7 +190,7 @@ func FetchRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	})
 	g.Go(func() error {
-		contributors, contributorCount, err := rest.GetContributorsByRepo(ctx, rd.Owner, rd.Name)
+		contributors, contributorCount, err := rest.GetContributorsByRepo(ctx, rd.Owner, rd.Name, rd.Repo.ID)
 		if err == nil {
 			rd.Contributors = contributors
 			rd.ContributorCount = contributorCount
@@ -170,7 +204,6 @@ func FetchRepoData(ctx context.Context, rd *RepoData) error {
 }
 
 func CreateRepoData(ctx context.Context, rd *RepoData) error {
-	// TODO: insert db repositories, issues, pullrequests, contributors, cursors
 	if err := db.CreateRepository(context.Background(), &model.Repository{
 		Owner:            rd.Owner,
 		Name:             rd.Name,
@@ -182,16 +215,8 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 		ForkCount:        rd.Repo.Forks.TotalCount,
 		ContributorCount: rd.ContributorCount,
 	}); err != nil {
-		slog.Error("error create repo", "err", err)
+		return err
 	}
-	db.CreateCursor(context.Background(), &model.Cursor{
-		EndCursor: rd.IssueEndCursor,
-		Type:      model.CursorTypeIssue,
-	})
-	db.CreateCursor(context.Background(), &model.Cursor{
-		EndCursor: rd.PREndCursor,
-		Type:      model.CursorTypePR,
-	})
 	var issueData []*model.Issue
 	for _, issue := range rd.Issues {
 		issueData = append(issueData, &model.Issue{
@@ -205,7 +230,9 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			IssueClosedAt:  issue.ClosedAt,
 		})
 	}
-	db.CreateIssues(ctx, issueData)
+	if err := db.CreateIssues(ctx, issueData); err != nil {
+		return err
+	}
 	var prData []*model.PullRequest
 	for _, pr := range rd.PRs {
 		prData = append(prData, &model.PullRequest{
@@ -220,18 +247,23 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			PRClosedAt:   pr.ClosedAt,
 		})
 	}
-	db.CreatePullRequests(ctx, prData)
-	var contributorsData []*model.Contributor
-	// TODO: 包装一个自己的 Contributor 类型，这个类型在 rest 调用 graphql 后返回，其中包含了数据库表中所有需要的数据
-	for _, contributor := range rd.Contributors {
-		contributorsData = append(contributorsData, &model.Contributor{
-			Login:         contributor.GetLogin(),
-			NodeID:        contributor.GetNodeID(),
-			Company:       "",
-			Location:      "",
-			AvatarURL:     contributor.GetAvatarURL(),
-			RepoNodeID:    rd.Repo.ID,
-			Contributions: contributor.GetContributions(),
-		})
+	if err := db.CreatePullRequests(ctx, prData); err != nil {
+		return err
 	}
+	if err := db.CreateCursor(context.Background(), &model.Cursor{
+		EndCursor: rd.IssueEndCursor,
+		Type:      model.CursorTypeIssue,
+	}); err != nil {
+		return err
+	}
+	if err := db.CreateCursor(context.Background(), &model.Cursor{
+		EndCursor: rd.PREndCursor,
+		Type:      model.CursorTypePR,
+	}); err != nil {
+		return err
+	}
+	if err := db.CreateContributors(ctx, rd.Contributors); err != nil {
+		return err
+	}
+	return nil
 }

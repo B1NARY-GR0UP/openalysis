@@ -83,6 +83,18 @@ func TestQueryPRInfo(t *testing.T) {
 	}
 }
 
+func TestQueryUserInfo(t *testing.T) {
+	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
+		panic(err.Error())
+	}
+	Init()
+	res, err := QueryUserInfo(context.Background(), "MDQ6VXNlcjg3NzYwMzM4")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(res)
+}
+
 func TestFor(t *testing.T) {
 	for i := range 5 {
 		if i == 2 {

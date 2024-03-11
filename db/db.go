@@ -41,12 +41,12 @@ func Init() {
 
 // TODO: handle join table and assignees
 
-func CreateGroups(ctx context.Context, groups []*model.Group) error {
-	return DB.WithContext(ctx).Create(groups).Error
+func CreateGroup(ctx context.Context, group *model.Group) error {
+	return DB.WithContext(ctx).Create(group).Error
 }
 
-func CreateOrganizations(ctx context.Context, orgs []*model.Organization) error {
-	return DB.WithContext(ctx).Create(orgs).Error
+func CreateOrganization(ctx context.Context, org *model.Organization) error {
+	return DB.WithContext(ctx).Create(org).Error
 }
 
 func CreateRepository(ctx context.Context, repo *model.Repository) error {

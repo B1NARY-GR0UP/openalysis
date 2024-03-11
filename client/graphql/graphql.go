@@ -115,8 +115,7 @@ func QueryOrgInfo(ctx context.Context, login string) (Org, error) {
 	variables := map[string]interface{}{
 		"login": githubv4.String(login),
 	}
-	err := GlobalV4Client.Query(ctx, query, variables)
-	if err != nil {
+	if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
 		return Org{}, err
 	}
 	return query.Organization, nil
@@ -233,6 +232,28 @@ func QueryPRInfo(ctx context.Context, owner, name, endCursor string) ([]PR, stri
 		variables["after"] = githubv4.NewString(githubv4.String(query.Repository.PullRequests.PageInfo.EndCursor))
 	}
 	return prs, query.Repository.PullRequests.PageInfo.EndCursor, nil
+}
+
+type UserInfo struct {
+	Node struct {
+		User User `graphql:"... on User"`
+	} `graphql:"node(id: $id)"`
+}
+
+type User struct {
+	Company  string
+	Location string
+}
+
+func QueryUserInfo(ctx context.Context, nodeID string) (User, error) {
+	query := &UserInfo{}
+	variables := map[string]interface{}{
+		"id": githubv4.ID(nodeID),
+	}
+	if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
+		return User{}, err
+	}
+	return query.Node.User, nil
 }
 
 // TODO: query issue and pr assignees

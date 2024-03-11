@@ -19,6 +19,7 @@ func Start(path string) {
 func Init(path string) {
 	config.Init(path)
 	db.Init()
+	// NOTE: graphql client MUST initialize before rest client due to dependency
 	graphql.Init()
 	rest.Init()
 }

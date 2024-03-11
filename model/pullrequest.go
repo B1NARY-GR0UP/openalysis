@@ -23,3 +23,12 @@ type PullRequest struct {
 	PRMergedAt  time.Time
 	PRClosedAt  time.Time
 }
+
+// PullRequestAssignees a pr can have multi reviewers
+// a user can be assigned to multi pull requests
+type PullRequestAssignees struct {
+	gorm.Model
+	PullRequestNodeID string
+	AssigneeNodeID    string
+	AssigneeLogin     string
+}

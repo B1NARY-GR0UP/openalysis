@@ -22,3 +22,12 @@ type Issue struct {
 	IssueCreatedAt time.Time
 	IssueClosedAt  time.Time
 }
+
+// IssueAssignees an issue can have multi assignees
+// a user can be assigned to multi issues
+type IssueAssignees struct {
+	gorm.Model
+	IssueNodeID    string
+	AssigneeNodeID string
+	AssigneeLogin  string
+}
