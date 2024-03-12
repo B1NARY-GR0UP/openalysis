@@ -5,7 +5,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
-	"github.com/B1NARY-GR0UP/openalysis/storage/mysql"
+	"github.com/B1NARY-GR0UP/openalysis/storage"
 )
 
 // TODO: main 应该只负责 oa 的初始化以及使用，不负责数据库初始化，配置文件读取等
@@ -18,7 +18,7 @@ func Start(path string) {
 
 func Init(path string) {
 	config.Init(path)
-	mysql.Init()
+	storage.Init()
 	// NOTE: graphql client MUST initialize before rest client due to dependency
 	graphql.Init()
 	rest.Init()

@@ -6,7 +6,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
-	"github.com/B1NARY-GR0UP/openalysis/storage/mysql"
+	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/robfig/cron/v3"
 	"golang.org/x/sync/errgroup"
@@ -88,7 +88,7 @@ func InitTask(ctx context.Context) {
 				}
 			}
 			// TODO: both success or failed
-			if err := mysql.CreateOrganization(ctx, &model.Organization{
+			if err := storage.CreateOrganization(ctx, &model.Organization{
 				Login:            org.Login,
 				NodeID:           org.ID,
 				IssueCount:       orgIssueCount,
@@ -100,7 +100,7 @@ func InitTask(ctx context.Context) {
 				slog.Error("error create org", "err", err)
 				continue
 			}
-			if err := mysql.CreateGroupsOrganizations(ctx, &model.GroupsOrganizations{
+			if err := storage.CreateGroupsOrganizations(ctx, &model.GroupsOrganizations{
 				GroupName: group.Name,
 				OrgNodeID: org.ID,
 			}); err != nil {
@@ -131,7 +131,7 @@ func InitTask(ctx context.Context) {
 				slog.Error("error create repo data", "err", err)
 				continue
 			}
-			if err := mysql.CreateGroupsRepositories(ctx, &model.GroupsRepositories{
+			if err := storage.CreateGroupsRepositories(ctx, &model.GroupsRepositories{
 				GroupName:  group.Name,
 				RepoNodeID: rd.Repo.ID,
 			}); err != nil {
@@ -147,7 +147,7 @@ func InitTask(ctx context.Context) {
 			}
 		}
 		// TODO: insert groups first, then update counts
-		if err := mysql.CreateGroup(ctx, &model.Group{
+		if err := storage.CreateGroup(ctx, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupIssueCount,
 			PullRequestCount: groupPullRequestCount,
@@ -218,7 +218,7 @@ func FetchRepoData(ctx context.Context, rd *RepoData) error {
 }
 
 func CreateRepoData(ctx context.Context, rd *RepoData) error {
-	if err := mysql.CreateRepository(context.Background(), &model.Repository{
+	if err := storage.CreateRepository(context.Background(), &model.Repository{
 		Owner:            rd.Owner,
 		Name:             rd.Name,
 		NodeID:           rd.Repo.ID,
@@ -244,7 +244,7 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			IssueClosedAt:  issue.ClosedAt,
 		})
 	}
-	if err := mysql.CreateIssues(ctx, issueData); err != nil {
+	if err := storage.CreateIssues(ctx, issueData); err != nil {
 		return err
 	}
 	var prData []*model.PullRequest
@@ -261,24 +261,24 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			PRClosedAt:   pr.ClosedAt,
 		})
 	}
-	if err := mysql.CreatePullRequests(ctx, prData); err != nil {
+	if err := storage.CreatePullRequests(ctx, prData); err != nil {
 		return err
 	}
-	if err := mysql.CreateCursor(context.Background(), &model.Cursor{
+	if err := storage.CreateCursor(context.Background(), &model.Cursor{
 		RepoNodeID: rd.Repo.ID,
 		EndCursor:  rd.IssueEndCursor,
 		Type:       model.CursorTypeIssue,
 	}); err != nil {
 		return err
 	}
-	if err := mysql.CreateCursor(context.Background(), &model.Cursor{
+	if err := storage.CreateCursor(context.Background(), &model.Cursor{
 		RepoNodeID: rd.Repo.ID,
 		EndCursor:  rd.PREndCursor,
 		Type:       model.CursorTypePR,
 	}); err != nil {
 		return err
 	}
-	if err := mysql.CreateContributors(ctx, rd.Contributors); err != nil {
+	if err := storage.CreateContributors(ctx, rd.Contributors); err != nil {
 		return err
 	}
 	return nil
