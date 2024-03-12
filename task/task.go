@@ -11,6 +11,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
+	"time"
 )
 
 // TODO: 记录每个小 task 的执行耗时
@@ -171,9 +172,9 @@ type RepoData struct {
 	Name             string
 	Repo             graphql.Repo
 	Issues           []graphql.Issue
-	IssueEndCursor   string
+	IssueLastUpdate  time.Time
 	PRs              []graphql.PR
-	PREndCursor      string
+	PRLastUpdate     time.Time
 	Contributors     []*model.Contributor
 	ContributorCount int
 }
@@ -188,18 +189,18 @@ func FetchRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	})
 	g.Go(func() error {
-		issues, issueEndCursor, err := graphql.QueryIssueInfo(ctx, rd.Owner, rd.Name, "")
+		issues, issueLastUpdate, err := graphql.QueryIssueInfo(ctx, rd.Owner, rd.Name, time.Time{})
 		if err == nil {
 			rd.Issues = issues
-			rd.IssueEndCursor = issueEndCursor
+			rd.IssueLastUpdate = issueLastUpdate
 		}
 		return err
 	})
 	g.Go(func() error {
-		prs, prEndCursor, err := graphql.QueryPRInfo(ctx, rd.Owner, rd.Name, "")
+		prs, prLastUpdate, err := graphql.QueryPRInfo(ctx, rd.Owner, rd.Name, time.Time{})
 		if err == nil {
 			rd.PRs = prs
-			rd.PREndCursor = prEndCursor
+			rd.PRLastUpdate = prLastUpdate
 		}
 		return err
 	})
@@ -266,14 +267,14 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 	}
 	if err := storage.CreateCursor(context.Background(), &model.Cursor{
 		RepoNodeID: rd.Repo.ID,
-		EndCursor:  rd.IssueEndCursor,
+		LastUpdate: rd.IssueLastUpdate,
 		Type:       model.CursorTypeIssue,
 	}); err != nil {
 		return err
 	}
 	if err := storage.CreateCursor(context.Background(), &model.Cursor{
 		RepoNodeID: rd.Repo.ID,
-		EndCursor:  rd.PREndCursor,
+		LastUpdate: rd.PRLastUpdate,
 		Type:       model.CursorTypePR,
 	}); err != nil {
 		return err

@@ -1,6 +1,9 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"time"
+)
 
 const (
 	CursorTypeIssue = "ISSUE"
@@ -10,7 +13,7 @@ const (
 type Cursor struct {
 	gorm.Model
 	RepoNodeID string
-	EndCursor  string
+	LastUpdate time.Time
 	// ISSUE | PR
 	Type string
 }

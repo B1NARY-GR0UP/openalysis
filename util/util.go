@@ -19,6 +19,20 @@ func SplitNameWithOwner(s string) (string, string) {
 	return parts[0], parts[1]
 }
 
+func AssembleDSN(host, port, user, password, database string) string {
+	var sb strings.Builder
+	sb.WriteString(user)
+	sb.WriteString(":")
+	sb.WriteString(password)
+	sb.WriteString("@tcp(")
+	sb.WriteString(host)
+	sb.WriteString(":")
+	sb.WriteString(port)
+	sb.WriteString(")/")
+	sb.WriteString(database)
+	return sb.String()
+}
+
 func WaitSignal(errC chan error) error {
 	signalToNotify := []os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM}
 	if signal.Ignored(syscall.SIGHUP) {

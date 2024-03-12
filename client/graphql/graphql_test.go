@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"testing"
+	"time"
 )
 
 func TestQueryRepoInfo(t *testing.T) {
@@ -48,17 +49,19 @@ func TestQueryIssueInfo(t *testing.T) {
 		panic(err.Error())
 	}
 	Init()
-	//issues, endCursor, err := QueryIssueInfo(context.Background(), "rainiring", "test", "")
+	//issues, lastUpdate, err := QueryIssueInfo(context.Background(), "rainiring", "test", time.Time{})
 	//if err != nil {
 	//	fmt.Println(err.Error())
 	//}
 	//fmt.Println(len(issues))
-	//fmt.Println(endCursor) // use for next update
+	//fmt.Println(lastUpdate.String())
 	//for _, issue := range issues {
 	//	fmt.Println(issue.Number)
 	//}
 
-	issues, _, err := QueryIssueInfo(context.Background(), "rainiring", "test", "Y3Vyc29yOnYyOpHOgar3bA==")
+	lastUpdate := time.Now().UTC()
+	time.Sleep(time.Second * 30)
+	issues, _, err := QueryIssueInfo(context.Background(), "rainiring", "test", lastUpdate)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -73,7 +76,7 @@ func TestQueryPRInfo(t *testing.T) {
 		panic(err.Error())
 	}
 	Init()
-	prs, _, err := QueryPRInfo(context.Background(), "cloudwego", "hertz", "")
+	prs, _, err := QueryPRInfo(context.Background(), "cloudwego", "hertz", time.Time{})
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -105,4 +108,10 @@ func TestFor(t *testing.T) {
 	sli := make([]int, 3)
 	sli = append(sli, 1, 2)
 	fmt.Println(sli) // [0 0 0 1 2]
+}
+
+func TestTime(t *testing.T) {
+	fmt.Println(time.Now())
+	fmt.Println(time.Now().UTC())
+	fmt.Println(time.Time{}.IsZero())
 }

@@ -129,7 +129,7 @@ type IssueInfo struct {
 				EndCursor   string
 			}
 			Nodes []Issue
-		} `graphql:"issues(first: $first, after: $after)"`
+		} `graphql:"issues(first: $first, after: $after, filterBy: { since: $since })"`
 	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 
@@ -152,21 +152,22 @@ type Issue struct {
 
 // QueryIssueInfo return issues according to the repo if endCursor is empty
 // it will return the updated issue since last update if endCursor is provided
-func QueryIssueInfo(ctx context.Context, owner, name, endCursor string) ([]Issue, string, error) {
+func QueryIssueInfo(ctx context.Context, owner, name string, lastUpdate time.Time) ([]Issue, time.Time, error) {
 	query := &IssueInfo{}
 	variables := map[string]interface{}{
 		"owner": githubv4.String(owner),
 		"name":  githubv4.String(name),
 		"first": githubv4.Int(100),
 		"after": (*githubv4.String)(nil),
+		"since": (*githubv4.DateTime)(nil),
 	}
-	if endCursor != "" {
-		variables["after"] = githubv4.NewString(githubv4.String(endCursor))
+	if !lastUpdate.IsZero() {
+		variables["since"] = githubv4.NewDateTime(githubv4.DateTime{Time: lastUpdate})
 	}
 	var issues []Issue
 	for {
 		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
-			return nil, "", err
+			return nil, time.Time{}, err
 		}
 		issues = append(issues, query.Repository.Issues.Nodes...)
 		if !query.Repository.Issues.PageInfo.HasNextPage {
@@ -174,7 +175,7 @@ func QueryIssueInfo(ctx context.Context, owner, name, endCursor string) ([]Issue
 		}
 		variables["after"] = githubv4.NewString(githubv4.String(query.Repository.Issues.PageInfo.EndCursor))
 	}
-	return issues, query.Repository.Issues.PageInfo.EndCursor, nil
+	return issues, time.Now().UTC(), nil
 }
 
 type PRInfo struct {
@@ -185,7 +186,7 @@ type PRInfo struct {
 				EndCursor   string
 			}
 			Nodes []PR
-		} `graphql:"pullRequests(first: $first, after: $after)"`
+		} `graphql:"pullRequests(first: $first, after: $after, filterBy: { since: $since })"`
 	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 
@@ -209,21 +210,22 @@ type PR struct {
 
 // QueryPRInfo return pull requests according to the repo if endCursor is empty
 // it will return the updated pull requests since last update if endCursor is provided
-func QueryPRInfo(ctx context.Context, owner, name, endCursor string) ([]PR, string, error) {
+func QueryPRInfo(ctx context.Context, owner, name string, lastUpdate time.Time) ([]PR, time.Time, error) {
 	query := &PRInfo{}
 	variables := map[string]interface{}{
 		"owner": githubv4.String(owner),
 		"name":  githubv4.String(name),
 		"first": githubv4.Int(100),
 		"after": (*githubv4.String)(nil),
+		"since": (*githubv4.DateTime)(nil),
 	}
-	if endCursor != "" {
-		variables["after"] = githubv4.NewString(githubv4.String(endCursor))
+	if !lastUpdate.IsZero() {
+		variables["since"] = githubv4.NewDateTime(githubv4.DateTime{Time: lastUpdate})
 	}
 	var prs []PR
 	for {
 		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
-			return nil, "", err
+			return nil, time.Time{}, err
 		}
 		prs = append(prs, query.Repository.PullRequests.Nodes...)
 		if !query.Repository.PullRequests.PageInfo.HasNextPage {
@@ -231,7 +233,7 @@ func QueryPRInfo(ctx context.Context, owner, name, endCursor string) ([]PR, stri
 		}
 		variables["after"] = githubv4.NewString(githubv4.String(query.Repository.PullRequests.PageInfo.EndCursor))
 	}
-	return prs, query.Repository.PullRequests.PageInfo.EndCursor, nil
+	return prs, time.Now().UTC(), nil
 }
 
 type UserInfo struct {

@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
+	"github.com/B1NARY-GR0UP/openalysis/util"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -10,9 +12,14 @@ import (
 var DB *gorm.DB
 
 func Init() {
-	// TODO: replace dsn with config
-	dsn := "root:114514@tcp(localhost:3306)/openalysis?charset=utf8&parseTime=True&loc=Local"
 	var err error
+	dsn := util.AssembleDSN(
+		config.GlobalConfig.DataSource.MySQL.Host,
+		config.GlobalConfig.DataSource.MySQL.Port,
+		config.GlobalConfig.DataSource.MySQL.User,
+		config.GlobalConfig.DataSource.MySQL.Password,
+		config.GlobalConfig.DataSource.MySQL.Database+"?charset=utf8&parseTime=True&loc=Local",
+	)
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		PrepareStmt: true,
 	})
