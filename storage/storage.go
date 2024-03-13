@@ -18,7 +18,7 @@ func Init() {
 		config.GlobalConfig.DataSource.MySQL.Port,
 		config.GlobalConfig.DataSource.MySQL.User,
 		config.GlobalConfig.DataSource.MySQL.Password,
-		config.GlobalConfig.DataSource.MySQL.Database+"?charset=utf8&parseTime=True&loc=Local",
+		config.GlobalConfig.DataSource.MySQL.Database,
 	)
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		PrepareStmt: true,

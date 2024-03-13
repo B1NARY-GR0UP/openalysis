@@ -31,17 +31,16 @@ type Issue struct {
 	IssueClosedAt  time.Time
 }
 
-// TODO: 初始化时查询每个 repo 状态为 OPEN 的 issue，然后获取每个 issue 的 assignees 并插入表
-// TODO: 每次更新使用 updatedAt 和 endCursor 获取新增的 issues 和更新的 issues，
-// TODO: 从新增的 issues 中选出 OPEN 并且有 assignee 的 issue，使用更新的 issues 更新数据库表的 issues (e.g. delete CLOSED issues)
-
 // IssueAssignees an issue can have multi assignees
 // a user can be assigned to multi issues
 type IssueAssignees struct {
 	gorm.Model
-	IssueNodeID    string
-	IssueNumber    int
-	IssueURL       string
+
+	IssueNodeID   string
+	IssueNumber   int
+	IssueURL      string
+	IssueRepoName string
+
 	AssigneeNodeID string
 	AssigneeLogin  string
 }

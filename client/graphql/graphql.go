@@ -150,6 +150,10 @@ type Issue struct {
 	ClosedAt  time.Time
 }
 
+// TODO: INIT 全部插入 issues table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
+// TODO: UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
+// TODO: 如果在就并且查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
+
 // QueryIssueInfo return issues according to the repo if lastUpdate is empty
 // it will return the issues since last update if lastUpdate is provided
 // including new issues and updated issues
@@ -259,22 +263,3 @@ func QueryUserInfo(ctx context.Context, nodeID string) (User, error) {
 	}
 	return query.Node.User, nil
 }
-
-type IssueAssigneeInfo struct {
-}
-
-func QueryIssueAssigneeInfo(ctx context.Context, owner, name string, lastUpdate time.Time) {
-}
-
-type PRAssigneeInfo struct {
-}
-
-func QueryPRAssigneeInfo(ctx context.Context, owner, name string, lastUpdate time.Time) {
-}
-
-// TODO: INIT: query all the open issue with assignees
-// TODO: use filterBy: {since: $since, states: $states, assignee: $assignee}
-// TODO: $states = "OPEN" $assignee = "*" $since = null
-
-// TODO: UPDATE: query all the updated issue since last updatedAt
-// TODO:

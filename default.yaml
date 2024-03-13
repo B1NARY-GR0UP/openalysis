@@ -1,18 +1,4 @@
 groups:
-  - name: "hello"
-    orgs:
-      - "org1"
-    repos:
-      - "repo1"
-      - "repo2"
-  - name: "world"
-    orgs:
-      - "org2"
-      - "org3"
-    repos:
-      - "repo3"
-      - "repo4"
-      - "repo5"
   # cloudwego family
   - name: "cloudwego"
     orgs:
@@ -29,7 +15,7 @@ datasource:
     port: "3306"
     user: "root"
     password: "114514"
-    database: "openalysis"
+    database: "openalysis?charset=utf8&parseTime=True&loc=Local"
 backend:
   frequency: "* * * *" # TODO: default "@daily"
   token: ""

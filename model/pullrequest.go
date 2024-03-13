@@ -34,9 +34,12 @@ type PullRequest struct {
 // a user can be assigned to multi pull requests
 type PullRequestAssignees struct {
 	gorm.Model
-	PullRequestNodeID string
-	PullRequestNumber int
-	PullRequestURL    string
-	AssigneeNodeID    string
-	AssigneeLogin     string
+
+	PullRequestNodeID   string
+	PullRequestNumber   int
+	PullRequestURL      string
+	PullRequestRepoName string
+
+	AssigneeNodeID string
+	AssigneeLogin  string
 }
