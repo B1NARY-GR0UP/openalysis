@@ -5,12 +5,6 @@ import (
 	"time"
 )
 
-const (
-	PullRequestStateTypeOpen   = "OPEN"
-	PullRequestStateTypeMerged = "MERGED"
-	PullRequestStateTypeClosed = "CLOSED"
-)
-
 // PullRequest many to many Contributor
 type PullRequest struct {
 	gorm.Model

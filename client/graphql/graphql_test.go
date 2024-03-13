@@ -49,26 +49,26 @@ func TestQueryIssueInfo(t *testing.T) {
 		panic(err.Error())
 	}
 	Init()
-	//issues, lastUpdate, err := QueryIssueInfo(context.Background(), "rainiring", "test", time.Time{})
+	issues, lastUpdate, err := QueryIssueInfoByRepo(context.Background(), "cloudwego", "hertz", time.Time{})
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println("length:", len(issues))
+	fmt.Println(lastUpdate.String())
+	for _, issue := range issues {
+		fmt.Println(issue)
+	}
+
+	//lastUpdate := time.Now().UTC()
+	//time.Sleep(time.Second * 30)
+	//issues, _, err := QueryIssueInfo(context.Background(), "rainiring", "test", lastUpdate)
 	//if err != nil {
 	//	fmt.Println(err.Error())
 	//}
 	//fmt.Println(len(issues))
-	//fmt.Println(lastUpdate.String())
 	//for _, issue := range issues {
 	//	fmt.Println(issue.Number)
 	//}
-
-	lastUpdate := time.Now().UTC()
-	time.Sleep(time.Second * 30)
-	issues, _, err := QueryIssueInfo(context.Background(), "rainiring", "test", lastUpdate)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	fmt.Println(len(issues))
-	for _, issue := range issues {
-		fmt.Println(issue.Number)
-	}
 }
 
 func TestQueryPRInfo(t *testing.T) {
@@ -76,7 +76,7 @@ func TestQueryPRInfo(t *testing.T) {
 		panic(err.Error())
 	}
 	Init()
-	prs, _, err := QueryPRInfo(context.Background(), "cloudwego", "hertz", time.Time{})
+	prs, _, err := QueryPRInfoByRepo(context.Background(), "cloudwego", "hertz", "")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -86,12 +86,24 @@ func TestQueryPRInfo(t *testing.T) {
 	}
 }
 
+func TestQuerySinglePR(t *testing.T) {
+	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
+		panic(err.Error())
+	}
+	Init()
+	pr, err := QuerySinglePR(context.Background(), "PR_kwDOHUxKus44ySzE")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(pr)
+}
+
 func TestQueryUserInfo(t *testing.T) {
 	if err := config.GlobalConfig.ReadInConfig("../../default.yaml"); err != nil {
 		panic(err.Error())
 	}
 	Init()
-	res, err := QueryUserInfo(context.Background(), "MDQ6VXNlcjg3NzYwMzM4")
+	res, err := QuerySingleUser(context.Background(), "MDQ6VXNlcjg3NzYwMzM4")
 	if err != nil {
 		fmt.Println(err)
 	}

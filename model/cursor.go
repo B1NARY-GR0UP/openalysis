@@ -5,15 +5,20 @@ import (
 	"time"
 )
 
+type CursorType string
+
 const (
-	CursorTypeIssue = "ISSUE"
-	CursorTypePR    = "PR"
+	CursorTypeIssue CursorType = "ISSUE"
+	CursorTypePR    CursorType = "PR"
 )
 
 type Cursor struct {
 	gorm.Model
 	RepoNodeID string
+	// used by issue
 	LastUpdate time.Time
+	// used by pr
+	EndCursor string
 	// ISSUE | PR
-	Type string
+	Type CursorType
 }

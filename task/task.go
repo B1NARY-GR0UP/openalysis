@@ -173,9 +173,9 @@ type RepoData struct {
 	Name             string
 	Repo             graphql.Repo
 	Issues           []graphql.Issue
-	IssueLastUpdate  time.Time
+	LastUpdate       time.Time
 	PRs              []graphql.PR
-	PRLastUpdate     time.Time
+	EndCursor        string
 	Contributors     []*model.Contributor
 	ContributorCount int
 }
@@ -190,18 +190,18 @@ func FetchRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	})
 	g.Go(func() error {
-		issues, issueLastUpdate, err := graphql.QueryIssueInfo(ctx, rd.Owner, rd.Name, time.Time{})
+		issues, lastUpdate, err := graphql.QueryIssueInfoByRepo(ctx, rd.Owner, rd.Name, time.Time{})
 		if err == nil {
 			rd.Issues = issues
-			rd.IssueLastUpdate = issueLastUpdate
+			rd.LastUpdate = lastUpdate
 		}
 		return err
 	})
 	g.Go(func() error {
-		prs, prLastUpdate, err := graphql.QueryPRInfo(ctx, rd.Owner, rd.Name, time.Time{})
+		prs, endCursor, err := graphql.QueryPRInfoByRepo(ctx, rd.Owner, rd.Name, "")
 		if err == nil {
 			rd.PRs = prs
-			rd.PRLastUpdate = prLastUpdate
+			rd.EndCursor = endCursor
 		}
 		return err
 	})
@@ -268,14 +268,14 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 	}
 	if err := storage.CreateCursor(context.Background(), &model.Cursor{
 		RepoNodeID: rd.Repo.ID,
-		LastUpdate: rd.IssueLastUpdate,
+		LastUpdate: rd.LastUpdate,
 		Type:       model.CursorTypeIssue,
 	}); err != nil {
 		return err
 	}
 	if err := storage.CreateCursor(context.Background(), &model.Cursor{
 		RepoNodeID: rd.Repo.ID,
-		LastUpdate: rd.PRLastUpdate,
+		EndCursor:  rd.EndCursor,
 		Type:       model.CursorTypePR,
 	}); err != nil {
 		return err

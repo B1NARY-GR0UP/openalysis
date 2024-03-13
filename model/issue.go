@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-const (
-	IssueStateTypeOpen   = "OPEN"
-	IssueStateTypeClosed = "CLOSED"
-)
-
 // Issue many to many Contributor
 type Issue struct {
 	gorm.Model

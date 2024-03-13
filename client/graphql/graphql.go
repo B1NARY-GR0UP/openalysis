@@ -129,7 +129,7 @@ type IssueInfo struct {
 				EndCursor   string
 			}
 			Nodes []Issue
-		} `graphql:"issues(first: $first, after: $after, filterBy: { since: $since })"`
+		} `graphql:"issues(first: $issuesFirst, after: $issuesAfter, filterBy: { since: $since })"`
 	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 
@@ -142,29 +142,41 @@ type Issue struct {
 		} `graphql:"... on User"`
 	}
 	Repository struct {
-		ID string
+		ID            string
+		NameWithOwner string
 	}
 	Number    int
+	URL       string
 	State     string
 	CreatedAt time.Time
 	ClosedAt  time.Time
+	Assignees struct { // TODO: handle paging (we assume that a issue's assignees count is less than 100)
+		Nodes []IssueAssignee
+	} `graphql:"assignees(first: $assigneesFirst, after: $assigneesAfter)"`
+}
+
+type IssueAssignee struct {
+	ID    string
+	Login string
 }
 
 // TODO: INIT 全部插入 issues table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-// TODO: UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
-// TODO: 如果在就并且查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
+//       UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
+//       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
 
-// QueryIssueInfo return issues according to the repo if lastUpdate is empty
+// QueryIssueInfoByRepo return issues according to the repo if lastUpdate is empty
 // it will return the issues since last update if lastUpdate is provided
 // including new issues and updated issues
-func QueryIssueInfo(ctx context.Context, owner, name string, lastUpdate time.Time) ([]Issue, time.Time, error) {
+func QueryIssueInfoByRepo(ctx context.Context, owner, name string, lastUpdate time.Time) ([]Issue, time.Time, error) {
 	query := &IssueInfo{}
 	variables := map[string]interface{}{
-		"owner": githubv4.String(owner),
-		"name":  githubv4.String(name),
-		"first": githubv4.Int(100),
-		"after": (*githubv4.String)(nil),
-		"since": (*githubv4.DateTime)(nil),
+		"owner":          githubv4.String(owner),
+		"name":           githubv4.String(name),
+		"issuesFirst":    githubv4.Int(100),
+		"issuesAfter":    (*githubv4.String)(nil),
+		"since":          (*githubv4.DateTime)(nil),
+		"assigneesFirst": githubv4.Int(100),
+		"assigneesAfter": (*githubv4.String)(nil),
 	}
 	if !lastUpdate.IsZero() {
 		variables["since"] = githubv4.NewDateTime(githubv4.DateTime{Time: lastUpdate})
@@ -178,7 +190,7 @@ func QueryIssueInfo(ctx context.Context, owner, name string, lastUpdate time.Tim
 		if !query.Repository.Issues.PageInfo.HasNextPage {
 			break
 		}
-		variables["after"] = githubv4.NewString(githubv4.String(query.Repository.Issues.PageInfo.EndCursor))
+		variables["issuesAfter"] = githubv4.NewString(githubv4.String(query.Repository.Issues.PageInfo.EndCursor))
 	}
 	return issues, time.Now().UTC(), nil
 }
@@ -191,7 +203,7 @@ type PRInfo struct {
 				EndCursor   string
 			}
 			Nodes []PR
-		} `graphql:"pullRequests(first: $first, after: $after, filterBy: { since: $since })"`
+		} `graphql:"pullRequests(first: $prFirst, after: $prAfter)"`
 	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 
@@ -204,45 +216,80 @@ type PR struct {
 		} `graphql:"... on User"`
 	}
 	Repository struct {
-		ID string
+		ID            string
+		NameWithOwner string
 	}
 	Number    int
+	URL       string
 	State     string
 	CreatedAt time.Time
 	MergedAt  time.Time
 	ClosedAt  time.Time
+	Assignees struct { // TODO: handle paging (we assume that a pr's assignees count is less than 100)
+		Nodes []PRAssignee
+	} `graphql:"assignees(first: $assigneesFirst, after: $assigneesAfter)"`
 }
 
-// QueryPRInfo return pull requests according to the repo if lastUpdate is empty
+type PRAssignee struct {
+	ID    string
+	Login string
+}
+
+// TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
+//       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
+//       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
+//       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
+
+// QueryPRInfoByRepo return pull requests according to the repo if lastUpdate is empty
 // it will return the prs since last update if lastUpdate is provided
 // including new prs and updated prs
-func QueryPRInfo(ctx context.Context, owner, name string, lastUpdate time.Time) ([]PR, time.Time, error) {
+func QueryPRInfoByRepo(ctx context.Context, owner, name, endCursor string) ([]PR, string, error) {
 	query := &PRInfo{}
 	variables := map[string]interface{}{
-		"owner": githubv4.String(owner),
-		"name":  githubv4.String(name),
-		"first": githubv4.Int(100),
-		"after": (*githubv4.String)(nil),
-		"since": (*githubv4.DateTime)(nil),
+		"owner":          githubv4.String(owner),
+		"name":           githubv4.String(name),
+		"prFirst":        githubv4.Int(100),
+		"prAfter":        (*githubv4.String)(nil),
+		"assigneesFirst": githubv4.Int(100),
+		"assigneesAfter": (*githubv4.String)(nil),
 	}
-	if !lastUpdate.IsZero() {
-		variables["since"] = githubv4.NewDateTime(githubv4.DateTime{Time: lastUpdate})
+	if endCursor != "" {
+		variables["prAfter"] = githubv4.NewString(githubv4.String(endCursor))
 	}
 	var prs []PR
 	for {
 		if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
-			return nil, time.Time{}, err
+			return nil, "", err
 		}
 		prs = append(prs, query.Repository.PullRequests.Nodes...)
 		if !query.Repository.PullRequests.PageInfo.HasNextPage {
 			break
 		}
-		variables["after"] = githubv4.NewString(githubv4.String(query.Repository.PullRequests.PageInfo.EndCursor))
+		variables["prAfter"] = githubv4.NewString(githubv4.String(query.Repository.PullRequests.PageInfo.EndCursor))
 	}
-	return prs, time.Now().UTC(), nil
+	return prs, query.Repository.PullRequests.PageInfo.EndCursor, nil
 }
 
-type UserInfo struct {
+type SinglePR struct {
+	Node struct {
+		PullRequest PR `graphql:"... on PullRequest"`
+	} `graphql:"node(id: $id)"`
+}
+
+func QuerySinglePR(ctx context.Context, id string) (PR, error) {
+	query := &SinglePR{}
+	variables := map[string]interface{}{
+		"id":             githubv4.ID(id),
+		"assigneesFirst": githubv4.Int(100),
+		"assigneesAfter": (*githubv4.String)(nil),
+	}
+	if err := GlobalV4Client.Query(ctx, query, variables); err != nil {
+		return PR{}, err
+	}
+	return query.Node.PullRequest, nil
+}
+
+type SingleUser struct {
 	Node struct {
 		User User `graphql:"... on User"`
 	} `graphql:"node(id: $id)"`
@@ -253,8 +300,8 @@ type User struct {
 	Location string
 }
 
-func QueryUserInfo(ctx context.Context, nodeID string) (User, error) {
-	query := &UserInfo{}
+func QuerySingleUser(ctx context.Context, nodeID string) (User, error) {
+	query := &SingleUser{}
 	variables := map[string]interface{}{
 		"id": githubv4.ID(nodeID),
 	}

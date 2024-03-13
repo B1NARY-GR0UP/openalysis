@@ -47,16 +47,8 @@ func TestCreateRepo(t *testing.T) {
 	}
 
 	err = DB.AutoMigrate(
-		&model.Contributor{},
+		&model.Cursor{},
 		&model.Group{},
-		&model.Issue{},
-		&model.Organization{},
-		&model.PullRequest{},
-		&model.Repository{},
-		&model.GroupsOrganizations{},
-		&model.GroupsRepositories{},
-		&model.IssueAssignees{},
-		&model.PullRequestAssignees{},
 	)
 
 	//err = DB.SetupJoinTable(&Person{}, "Addresses", &PersonAddress{})

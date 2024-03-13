@@ -43,7 +43,7 @@ func GetContributorsByRepo(ctx context.Context, owner, name, repoNodeID string) 
 	}
 	var contributorData []*model.Contributor
 	for _, c := range cs {
-		user, err := graphql.QueryUserInfo(ctx, c.GetNodeID())
+		user, err := graphql.QuerySingleUser(ctx, c.GetNodeID())
 		if err != nil {
 			return nil, 0, err
 		}
