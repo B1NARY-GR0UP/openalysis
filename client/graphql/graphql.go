@@ -150,8 +150,9 @@ type Issue struct {
 	ClosedAt  time.Time
 }
 
-// QueryIssueInfo return issues according to the repo if endCursor is empty
-// it will return the updated issue since last update if endCursor is provided
+// QueryIssueInfo return issues according to the repo if lastUpdate is empty
+// it will return the issues since last update if lastUpdate is provided
+// including new issues and updated issues
 func QueryIssueInfo(ctx context.Context, owner, name string, lastUpdate time.Time) ([]Issue, time.Time, error) {
 	query := &IssueInfo{}
 	variables := map[string]interface{}{
@@ -208,8 +209,9 @@ type PR struct {
 	ClosedAt  time.Time
 }
 
-// QueryPRInfo return pull requests according to the repo if endCursor is empty
-// it will return the updated pull requests since last update if endCursor is provided
+// QueryPRInfo return pull requests according to the repo if lastUpdate is empty
+// it will return the prs since last update if lastUpdate is provided
+// including new prs and updated prs
 func QueryPRInfo(ctx context.Context, owner, name string, lastUpdate time.Time) ([]PR, time.Time, error) {
 	query := &PRInfo{}
 	variables := map[string]interface{}{
@@ -258,8 +260,17 @@ func QueryUserInfo(ctx context.Context, nodeID string) (User, error) {
 	return query.Node.User, nil
 }
 
-// TODO: NOTE: 使用 filterBy 的 since 参数的时候，可以查询到这个时间点后所有有更新的 issues，包括新创建的 issues 和之前状态发送变化的 issues
-// TODO: 取消使用 endCursor 来增量更新 issues，使用 since 来更新 issues，但是仍然需要使用分页防止一次获取的数量大于 100 条
+type IssueAssigneeInfo struct {
+}
+
+func QueryIssueAssigneeInfo(ctx context.Context, owner, name string, lastUpdate time.Time) {
+}
+
+type PRAssigneeInfo struct {
+}
+
+func QueryPRAssigneeInfo(ctx context.Context, owner, name string, lastUpdate time.Time) {
+}
 
 // TODO: INIT: query all the open issue with assignees
 // TODO: use filterBy: {since: $since, states: $states, assignee: $assignee}

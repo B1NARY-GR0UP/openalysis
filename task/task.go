@@ -34,6 +34,7 @@ func Start() {
 	slog.Info("openalysis service stopped")
 }
 
+// InitTask TODO: 添加进度条显示
 func InitTask(ctx context.Context) {
 	// handle groups
 	for _, group := range config.GlobalConfig.Groups {
