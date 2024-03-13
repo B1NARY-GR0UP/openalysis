@@ -5,9 +5,6 @@ import (
 	"time"
 )
 
-// TODO: 如何在每次更新的时候更新之前的 Issue 的状态
-// TODO: 使用增量更新(获取 updatedAt 在上次更新时间之后所有 issues 并更新数据库)或者 webhooks
-
 const (
 	IssueStateTypeOpen   = "OPEN"
 	IssueStateTypeClosed = "CLOSED"
