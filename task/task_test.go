@@ -6,8 +6,9 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
-	"github.com/B1NARY-GR0UP/openalysis/db"
+	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/robfig/cron/v3"
+	"github.com/schollz/progressbar/v3"
 	"testing"
 	"time"
 )
@@ -37,8 +38,20 @@ func TestTask(t *testing.T) {
 
 func TestInitTask(t *testing.T) {
 	config.Init("../default.yaml")
-	db.Init()
+	storage.Init()
 	graphql.Init()
 	rest.Init()
 	InitTask(context.Background()) // 7min 78s (467.58s)
+}
+
+func TestProgressBar(t *testing.T) {
+	barOut := progressbar.Default(10, "OUT FOR")
+	for _ = range 10 {
+		barOut.Add(1)
+		barIn := progressbar.Default(10, "IN FOR")
+		for _ = range 10 {
+			barIn.Add(1)
+			time.Sleep(time.Second * 1)
+		}
+	}
 }
