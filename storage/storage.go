@@ -82,12 +82,12 @@ func CreatePullRequests(ctx context.Context, prs []*model.PullRequest) error {
 	return DB.WithContext(ctx).Create(prs).Error
 }
 
-func CreateIssueAssignees(ctx context.Context, as *model.IssueAssignees) error {
-	return DB.WithContext(ctx).Create(as).Error
+func CreateIssueAssignees(ctx context.Context, assignees []*model.IssueAssignees) error {
+	return DB.WithContext(ctx).Create(assignees).Error
 }
 
-func CreatePullRequestAssignees(ctx context.Context, as *model.PullRequestAssignees) error {
-	return DB.WithContext(ctx).Create(as).Error
+func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequestAssignees) error {
+	return DB.WithContext(ctx).Create(assignees).Error
 }
 
 func CreateContributors(ctx context.Context, cs []*model.Contributor) error {
