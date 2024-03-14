@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
@@ -10,7 +9,6 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/robfig/cron/v3"
-	"github.com/schollz/progressbar/v3"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"time"
@@ -38,10 +36,10 @@ func Start() {
 
 // InitTask TODO: 添加进度条显示
 func InitTask(ctx context.Context) {
-	groupBar := progressbar.Default(int64(len(config.GlobalConfig.Groups)), "Handle Groups")
+	//groupBar := progressbar.Default(int64(len(config.GlobalConfig.Groups)), "Handle Groups")
 	// handle groups
 	for _, group := range config.GlobalConfig.Groups {
-		_ = groupBar.Add(1)
+		//_ = groupBar.Add(1)
 		var (
 			groupIssueCount       int
 			groupPullRequestCount int
@@ -49,10 +47,10 @@ func InitTask(ctx context.Context) {
 			groupForkCount        int
 			groupContributorCount int
 		)
-		orgBar := progressbar.Default(int64(len(group.Orgs)), fmt.Sprintf("Handle Org in Group [%v]", group.Name))
+		//orgBar := progressbar.Default(int64(len(group.Orgs)), fmt.Sprintf("Handle Org in Group [%v]", group.Name))
 		// handle orgs in groups
 		for _, login := range group.Orgs {
-			_ = orgBar.Add(1)
+			//_ = orgBar.Add(1)
 			var (
 				orgIssueCount       int
 				orgPullRequestCount int
