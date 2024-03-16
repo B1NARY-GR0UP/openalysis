@@ -9,6 +9,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/robfig/cron/v3"
+	"github.com/shurcooL/githubv4"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"time"
@@ -47,7 +48,6 @@ func InitTask(ctx context.Context) {
 		)
 		// handle orgs in groups
 		for _, login := range group.Orgs {
-			//_ = orgBar.Add(1)
 			var (
 				orgIssueCount       int
 				orgPullRequestCount int
@@ -235,6 +235,7 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	}
 	var issueData []*model.Issue
+	var issueAssignees []*model.IssueAssignees
 	for _, issue := range rd.Issues {
 		issueData = append(issueData, &model.Issue{
 			NodeID:         issue.ID,
@@ -246,11 +247,27 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			IssueCreatedAt: issue.CreatedAt,
 			IssueClosedAt:  issue.ClosedAt,
 		})
+		if !util.IsEmptySlice(issue.Assignees.Nodes) && githubv4.IssueState(issue.State) == githubv4.IssueStateOpen {
+			for _, assignee := range issue.Assignees.Nodes {
+				issueAssignees = append(issueAssignees, &model.IssueAssignees{
+					IssueNodeID:    issue.ID,
+					IssueNumber:    issue.Number,
+					IssueURL:       issue.URL,
+					IssueRepoName:  issue.Repository.NameWithOwner,
+					AssigneeNodeID: assignee.ID,
+					AssigneeLogin:  assignee.Login,
+				})
+			}
+		}
 	}
 	if err := storage.CreateIssues(ctx, issueData); err != nil {
 		return err
 	}
+	if err := storage.CreateIssueAssignees(ctx, issueAssignees); err != nil {
+		return err
+	}
 	var prData []*model.PullRequest
+	var prAssignees []*model.PullRequestAssignees
 	for _, pr := range rd.PRs {
 		prData = append(prData, &model.PullRequest{
 			NodeID:       pr.ID,
@@ -263,8 +280,23 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			PRMergedAt:   pr.MergedAt,
 			PRClosedAt:   pr.ClosedAt,
 		})
+		if !util.IsEmptySlice(pr.Assignees.Nodes) && githubv4.PullRequestState(pr.State) == githubv4.PullRequestStateOpen {
+			for _, assignee := range pr.Assignees.Nodes {
+				prAssignees = append(prAssignees, &model.PullRequestAssignees{
+					PullRequestNodeID:   pr.ID,
+					PullRequestNumber:   pr.Number,
+					PullRequestURL:      pr.URL,
+					PullRequestRepoName: pr.Repository.NameWithOwner,
+					AssigneeNodeID:      assignee.ID,
+					AssigneeLogin:       assignee.Login,
+				})
+			}
+		}
 	}
 	if err := storage.CreatePullRequests(ctx, prData); err != nil {
+		return err
+	}
+	if err := storage.CreatePullRequestAssignees(ctx, prAssignees); err != nil {
 		return err
 	}
 	if err := storage.CreateCursor(context.Background(), &model.Cursor{

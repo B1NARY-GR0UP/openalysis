@@ -57,6 +57,7 @@ func TestQueryIssueInfo(t *testing.T) {
 	fmt.Println(lastUpdate.String())
 	for _, issue := range issues {
 		fmt.Println(issue)
+		fmt.Println(len(issue.Assignees.Nodes)) // all alloc memory
 	}
 
 	//lastUpdate := time.Now().UTC()

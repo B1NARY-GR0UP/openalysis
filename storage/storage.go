@@ -69,28 +69,37 @@ func CreateGroupsRepositories(ctx context.Context, join *model.GroupsRepositorie
 }
 
 func CreateIssues(ctx context.Context, issues []*model.Issue) error {
-	if issues == nil || len(issues) == 0 {
+	if util.IsEmptySlice(issues) {
 		return nil
 	}
 	return DB.WithContext(ctx).Create(issues).Error
 }
 
 func CreatePullRequests(ctx context.Context, prs []*model.PullRequest) error {
-	if prs == nil || len(prs) == 0 {
+	if util.IsEmptySlice(prs) {
 		return nil
 	}
 	return DB.WithContext(ctx).Create(prs).Error
 }
 
 func CreateIssueAssignees(ctx context.Context, assignees []*model.IssueAssignees) error {
+	if util.IsEmptySlice(assignees) {
+		return nil
+	}
 	return DB.WithContext(ctx).Create(assignees).Error
 }
 
 func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequestAssignees) error {
+	if util.IsEmptySlice(assignees) {
+		return nil
+	}
 	return DB.WithContext(ctx).Create(assignees).Error
 }
 
 func CreateContributors(ctx context.Context, cs []*model.Contributor) error {
+	if util.IsEmptySlice(cs) {
+		return nil
+	}
 	return DB.WithContext(ctx).Create(cs).Error
 }
 

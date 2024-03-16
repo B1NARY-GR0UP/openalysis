@@ -57,3 +57,10 @@ func WaitSignal(errC chan error) error {
 	}
 	return nil
 }
+
+func IsEmptySlice[T any](slice []T) bool {
+	if slice == nil || len(slice) == 0 {
+		return true
+	}
+	return false
+}
