@@ -160,10 +160,6 @@ type IssueAssignee struct {
 	Login string
 }
 
-// TODO: INIT 全部插入 issues table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-//       UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
-//       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
-
 // QueryIssueInfoByRepo return issues according to the repo if lastUpdate is empty
 // it will return the issues since last update if lastUpdate is provided
 // including new issues and updated issues
@@ -234,11 +230,6 @@ type PRAssignee struct {
 	ID    string
 	Login string
 }
-
-// TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-//       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
-//       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
-//       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
 
 // QueryPRInfoByRepo return pull requests according to the repo if lastUpdate is empty
 // it will return the prs since last update if lastUpdate is provided

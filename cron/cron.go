@@ -35,6 +35,9 @@ func Start() {
 	slog.Info("openalysis service stopped")
 }
 
+// map[orgLogin][]string{ repoNameWithOwner }
+var cache map[string][]string
+
 // InitTask TODO: 添加进度条显示
 func InitTask(ctx context.Context) {
 	// handle groups
@@ -71,10 +74,11 @@ func InitTask(ctx context.Context) {
 			for _, nameWithOwner := range repos {
 				owner, name := util.SplitNameWithOwner(nameWithOwner)
 				rd := &RepoData{
-					Owner: owner,
-					Name:  name,
+					Owner:         owner,
+					Name:          name,
+					NameWithOwner: nameWithOwner,
 				}
-				if err := FetchRepoData(ctx, rd); err != nil {
+				if err := FetchRepoData(ctx, rd, time.Time{}, ""); err != nil {
 					slog.Error("error fetch repo data", "err", err)
 					continue
 				}
@@ -122,10 +126,11 @@ func InitTask(ctx context.Context) {
 		for _, nameWithOwner := range group.Repos {
 			owner, name := util.SplitNameWithOwner(nameWithOwner)
 			rd := &RepoData{
-				Owner: owner,
-				Name:  name,
+				Owner:         owner,
+				Name:          name,
+				NameWithOwner: nameWithOwner,
 			}
-			if err := FetchRepoData(ctx, rd); err != nil {
+			if err := FetchRepoData(ctx, rd, time.Time{}, ""); err != nil {
 				slog.Error("error fetch repo data", "err", err)
 				continue
 			}
@@ -164,14 +169,63 @@ func InitTask(ctx context.Context) {
 	}
 }
 
-// TODO: update task 是不是可以简化流程，例如在 init task 时提前把所有 repo 存储到内存
+// TODO: INIT 全部插入 issues table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
+//       UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
+//       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
 
-func UpdateTask() {
+// TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
+//       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
+//       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
+//       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
+
+func UpdateTask(ctx context.Context) {
+	for _, group := range config.GlobalConfig.Groups {
+		var (
+			groupIssueCount       int
+			groupPullRequestCount int
+			groupStarCount        int
+			groupForkCount        int
+			groupContributorCount int
+		)
+		for _, login := range group.Orgs {
+			var (
+				orgIssueCount       int
+				orgPullRequestCount int
+				orgStarCount        int
+				orgForkCount        int
+				orgContributorCount int
+			)
+			// TODO: 处理 org 新增 repo 和删除 repo 的情况
+			repos, err := graphql.QueryRepoNameByOrg(ctx, login)
+			if err != nil {
+				slog.Error("error query repo name by org", "err", err.Error())
+				continue
+			}
+
+			_, deleted := util.CompareSlices(cache[login], repos)
+			DeleteRepos(deleted)
+
+			for _, nameWithOwner := range repos {
+				owner, name := util.SplitNameWithOwner(nameWithOwner)
+				rd := &RepoData{
+					Owner:         owner,
+					Name:          name,
+					NameWithOwner: nameWithOwner,
+				}
+				// TODO
+				if err := FetchRepoData(ctx, rd); err != nil {
+					slog.Error("error fetch repo data", "err", err)
+					continue
+				}
+			}
+		}
+	}
 }
 
 type RepoData struct {
 	Owner            string
 	Name             string
+	NameWithOwner    string
 	Repo             graphql.Repo
 	Issues           []graphql.Issue
 	LastUpdate       time.Time
@@ -181,7 +235,7 @@ type RepoData struct {
 	ContributorCount int
 }
 
-func FetchRepoData(ctx context.Context, rd *RepoData) error {
+func FetchRepoData(ctx context.Context, rd *RepoData, lu time.Time, ec string) error {
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		repo, err := graphql.QueryRepoInfo(ctx, rd.Owner, rd.Name)
@@ -191,7 +245,11 @@ func FetchRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	})
 	g.Go(func() error {
-		issues, lastUpdate, err := graphql.QueryIssueInfoByRepo(ctx, rd.Owner, rd.Name, time.Time{})
+		t := time.Time{}
+		if !lu.IsZero() {
+			t = lu
+		}
+		issues, lastUpdate, err := graphql.QueryIssueInfoByRepo(ctx, rd.Owner, rd.Name, t)
 		if err == nil {
 			rd.Issues = issues
 			rd.LastUpdate = lastUpdate
@@ -199,7 +257,11 @@ func FetchRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	})
 	g.Go(func() error {
-		prs, endCursor, err := graphql.QueryPRInfoByRepo(ctx, rd.Owner, rd.Name, "")
+		c := ""
+		if ec != "" {
+			c = ec
+		}
+		prs, endCursor, err := graphql.QueryPRInfoByRepo(ctx, rd.Owner, rd.Name, c)
 		if err == nil {
 			rd.PRs = prs
 			rd.EndCursor = endCursor
@@ -300,16 +362,18 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	}
 	if err := storage.CreateCursor(context.Background(), &model.Cursor{
-		RepoNodeID: rd.Repo.ID,
-		LastUpdate: rd.LastUpdate,
-		Type:       model.CursorTypeIssue,
+		RepoNodeID:        rd.Repo.ID,
+		RepoNameWithOwner: rd.NameWithOwner,
+		LastUpdate:        rd.LastUpdate,
+		Type:              model.CursorTypeIssue,
 	}); err != nil {
 		return err
 	}
 	if err := storage.CreateCursor(context.Background(), &model.Cursor{
-		RepoNodeID: rd.Repo.ID,
-		EndCursor:  rd.EndCursor,
-		Type:       model.CursorTypePR,
+		RepoNodeID:        rd.Repo.ID,
+		RepoNameWithOwner: rd.NameWithOwner,
+		EndCursor:         rd.EndCursor,
+		Type:              model.CursorTypePR,
 	}); err != nil {
 		return err
 	}
@@ -317,4 +381,10 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 		return err
 	}
 	return nil
+}
+
+func UpdateRepoData() {
+}
+
+func DeleteRepos(repos []string) {
 }

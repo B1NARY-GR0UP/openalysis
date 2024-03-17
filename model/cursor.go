@@ -14,7 +14,8 @@ const (
 
 type Cursor struct {
 	gorm.Model
-	RepoNodeID string
+	RepoNodeID        string
+	RepoNameWithOwner string
 	// used by issue
 	LastUpdate time.Time
 	// used by pr

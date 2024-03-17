@@ -64,3 +64,31 @@ func IsEmptySlice[T any](slice []T) bool {
 	}
 	return false
 }
+
+func CompareSlices[T comparable](s1, s2 []T) ([]T, []T) {
+	m1 := make(map[T]bool)
+	m2 := make(map[T]bool)
+
+	for _, v := range s1 {
+		m1[v] = true
+	}
+	for _, v := range s2 {
+		m2[v] = true
+	}
+
+	var s2MoreThanS1 []T
+	var s2LessThanS1 []T
+
+	for k := range m2 {
+		if !m1[k] {
+			s2MoreThanS1 = append(s2MoreThanS1, k)
+		}
+	}
+	for k := range m1 {
+		if !m2[k] {
+			s2LessThanS1 = append(s2LessThanS1, k)
+		}
+	}
+
+	return s2MoreThanS1, s2LessThanS1
+}
