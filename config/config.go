@@ -31,8 +31,8 @@ type MySQL struct {
 }
 
 type Backend struct {
-	Frequency string `yaml:"frequency"` // Frequency api pull frequency
-	Token     string `yaml:"token"`
+	Cron  string `yaml:"cron"`
+	Token string `yaml:"token"`
 }
 
 func (cfg *Config) ReadInConfig(path string) error {

@@ -17,11 +17,13 @@ import (
 
 // TODO: 记录每个小 task 的执行耗时
 
-func Start() {
+func Start(ctx context.Context) {
 	errC := make(chan error)
 
 	c := cron.New()
-	if _, err := c.AddFunc(config.GlobalConfig.Backend.Frequency, func() {}); err != nil {
+	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
+		UpdateTask(ctx)
+	}); err != nil {
 		slog.Error("error doing cron", "err", err)
 		errC <- err
 	}
@@ -35,29 +37,27 @@ func Start() {
 	slog.Info("openalysis service stopped")
 }
 
-// map[orgLogin][]string{ repoNameWithOwner }
+// map[orgLogin][]repoNameWithOwner
 var cache map[string][]string
+
+type Count struct {
+	IssueCount       int
+	PullRequestCount int
+	StarCount        int
+	ForkCount        int
+	ContributorCount int
+}
 
 // InitTask TODO: 添加进度条显示
 func InitTask(ctx context.Context) {
+	// init cache
+	cache = make(map[string][]string)
 	// handle groups
 	for _, group := range config.GlobalConfig.Groups {
-		var (
-			groupIssueCount       int
-			groupPullRequestCount int
-			groupStarCount        int
-			groupForkCount        int
-			groupContributorCount int
-		)
+		var groupCount Count
 		// handle orgs in groups
 		for _, login := range group.Orgs {
-			var (
-				orgIssueCount       int
-				orgPullRequestCount int
-				orgStarCount        int
-				orgForkCount        int
-				orgContributorCount int
-			)
+			var orgCount Count
 			// org data
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
@@ -69,6 +69,9 @@ func InitTask(ctx context.Context) {
 				slog.Error("error query repo name by org", "err", err.Error())
 				continue
 			}
+
+			cache[login] = repos
+
 			// handle repos in org
 			// TODO: use errgroup to optimize performance
 			for _, nameWithOwner := range repos {
@@ -79,47 +82,47 @@ func InitTask(ctx context.Context) {
 					NameWithOwner: nameWithOwner,
 				}
 				if err := FetchRepoData(ctx, rd, time.Time{}, ""); err != nil {
-					slog.Error("error fetch repo data", "err", err)
+					slog.Error("error fetch repo data", "err", err.Error())
 					continue
 				}
 				if err := CreateRepoData(ctx, rd); err != nil {
-					slog.Error("error create repo data", "err", err)
+					slog.Error("error create repo data", "err", err.Error())
 					continue
 				}
 				{
-					orgIssueCount += rd.Repo.Issues.TotalCount
-					orgPullRequestCount += rd.Repo.PullRequests.TotalCount
-					orgStarCount += rd.Repo.Stargazers.TotalCount
-					orgForkCount += rd.Repo.Forks.TotalCount
-					orgContributorCount += rd.ContributorCount
+					orgCount.IssueCount += rd.Repo.Issues.TotalCount
+					orgCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
+					orgCount.StarCount += rd.Repo.Stargazers.TotalCount
+					orgCount.ForkCount += rd.Repo.Forks.TotalCount
+					orgCount.ContributorCount += rd.ContributorCount
 				}
 			}
 			// TODO: both success or failed
 			if err := storage.CreateOrganization(ctx, &model.Organization{
 				Login:            org.Login,
 				NodeID:           org.ID,
-				IssueCount:       orgIssueCount,
-				PullRequestCount: orgPullRequestCount,
-				StarCount:        orgStarCount,
-				ForkCount:        orgForkCount,
-				ContributorCount: orgContributorCount,
+				IssueCount:       orgCount.IssueCount,
+				PullRequestCount: orgCount.PullRequestCount,
+				StarCount:        orgCount.StarCount,
+				ForkCount:        orgCount.ForkCount,
+				ContributorCount: orgCount.ContributorCount,
 			}); err != nil {
-				slog.Error("error create org", "err", err)
+				slog.Error("error create org", "err", err.Error())
 				continue
 			}
 			if err := storage.CreateGroupsOrganizations(ctx, &model.GroupsOrganizations{
 				GroupName: group.Name,
 				OrgNodeID: org.ID,
 			}); err != nil {
-				slog.Error("error create group org join", "err", err)
+				slog.Error("error create group org join", "err", err.Error())
 				continue
 			}
 			{
-				groupIssueCount += orgIssueCount
-				groupPullRequestCount += orgPullRequestCount
-				groupStarCount += orgStarCount
-				groupForkCount += orgForkCount
-				groupContributorCount += orgContributorCount
+				groupCount.IssueCount += orgCount.IssueCount
+				groupCount.PullRequestCount += orgCount.PullRequestCount
+				groupCount.StarCount += orgCount.StarCount
+				groupCount.ForkCount += orgCount.ForkCount
+				groupCount.ContributorCount += orgCount.ContributorCount
 			}
 		}
 		// handle repos in group
@@ -131,70 +134,49 @@ func InitTask(ctx context.Context) {
 				NameWithOwner: nameWithOwner,
 			}
 			if err := FetchRepoData(ctx, rd, time.Time{}, ""); err != nil {
-				slog.Error("error fetch repo data", "err", err)
+				slog.Error("error fetch repo data", "err", err.Error())
 				continue
 			}
 			// TODO: both success or failed
 			if err := CreateRepoData(ctx, rd); err != nil {
-				slog.Error("error create repo data", "err", err)
+				slog.Error("error create repo data", "err", err.Error())
 				continue
 			}
 			if err := storage.CreateGroupsRepositories(ctx, &model.GroupsRepositories{
 				GroupName:  group.Name,
 				RepoNodeID: rd.Repo.ID,
 			}); err != nil {
-				slog.Error("error create group repo join", "err", err)
+				slog.Error("error create group repo join", "err", err.Error())
 				continue
 			}
 			{
-				groupIssueCount += rd.Repo.Issues.TotalCount
-				groupPullRequestCount += rd.Repo.PullRequests.TotalCount
-				groupStarCount += rd.Repo.Stargazers.TotalCount
-				groupForkCount += rd.Repo.Forks.TotalCount
-				groupContributorCount += rd.ContributorCount
+				groupCount.IssueCount += rd.Repo.Issues.TotalCount
+				groupCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
+				groupCount.StarCount += rd.Repo.Stargazers.TotalCount
+				groupCount.ForkCount += rd.Repo.Forks.TotalCount
+				groupCount.ContributorCount += rd.ContributorCount
 			}
 		}
 		// TODO: insert groups first, then update counts
 		if err := storage.CreateGroup(ctx, &model.Group{
 			Name:             group.Name,
-			IssueCount:       groupIssueCount,
-			PullRequestCount: groupPullRequestCount,
-			StarCount:        groupStarCount,
-			ForkCount:        groupForkCount,
-			ContributorCount: groupContributorCount,
+			IssueCount:       groupCount.IssueCount,
+			PullRequestCount: groupCount.PullRequestCount,
+			StarCount:        groupCount.StarCount,
+			ForkCount:        groupCount.ForkCount,
+			ContributorCount: groupCount.ContributorCount,
 		}); err != nil {
-			slog.Error("error create group", "err", err)
+			slog.Error("error create group", "err", err.Error())
 			continue
 		}
 	}
 }
 
-// TODO: INIT 全部插入 issues table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-//       UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
-//       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
-
-// TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-//       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
-//       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
-//       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
-
 func UpdateTask(ctx context.Context) {
 	for _, group := range config.GlobalConfig.Groups {
-		var (
-			groupIssueCount       int
-			groupPullRequestCount int
-			groupStarCount        int
-			groupForkCount        int
-			groupContributorCount int
-		)
+		var groupCount Count
 		for _, login := range group.Orgs {
-			var (
-				orgIssueCount       int
-				orgPullRequestCount int
-				orgStarCount        int
-				orgForkCount        int
-				orgContributorCount int
-			)
+			var orgCount Count
 			// TODO: 处理 org 新增 repo 和删除 repo 的情况
 			repos, err := graphql.QueryRepoNameByOrg(ctx, login)
 			if err != nil {
@@ -203,7 +185,13 @@ func UpdateTask(ctx context.Context) {
 			}
 
 			_, deleted := util.CompareSlices(cache[login], repos)
-			DeleteRepos(deleted)
+			if err := DeleteRepos(deleted); err != nil {
+				slog.Error("error delete repos", "err", err.Error())
+				continue
+			}
+
+			// update cache
+			cache[login] = repos
 
 			for _, nameWithOwner := range repos {
 				owner, name := util.SplitNameWithOwner(nameWithOwner)
@@ -212,10 +200,26 @@ func UpdateTask(ctx context.Context) {
 					Name:          name,
 					NameWithOwner: nameWithOwner,
 				}
-				// TODO
-				if err := FetchRepoData(ctx, rd); err != nil {
-					slog.Error("error fetch repo data", "err", err)
+				cursor, err := storage.QueryCursor(ctx, nameWithOwner)
+				if err != nil {
+					slog.Error("error query cursor", "err", err.Error())
 					continue
+				}
+				if err := FetchRepoData(ctx, rd, cursor.LastUpdate, cursor.EndCursor); err != nil {
+					slog.Error("error fetch repo data", "err", err.Error())
+					continue
+				}
+				// TODO
+				if err := UpdateRepoData(ctx, rd); err != nil {
+					slog.Error("error update repo data", "err", err.Error())
+					continue
+				}
+				{
+					orgCount.IssueCount += rd.Repo.Issues.TotalCount
+					orgCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
+					orgCount.StarCount += rd.Repo.Stargazers.TotalCount
+					orgCount.ForkCount += rd.Repo.Forks.TotalCount
+					orgCount.ContributorCount += rd.ContributorCount
 				}
 			}
 		}
@@ -283,7 +287,7 @@ func FetchRepoData(ctx context.Context, rd *RepoData, lu time.Time, ec string) e
 }
 
 func CreateRepoData(ctx context.Context, rd *RepoData) error {
-	if err := storage.CreateRepository(context.Background(), &model.Repository{
+	if err := storage.CreateRepository(ctx, &model.Repository{
 		Owner:            rd.Owner,
 		Name:             rd.Name,
 		NodeID:           rd.Repo.ID,
@@ -365,15 +369,7 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 		RepoNodeID:        rd.Repo.ID,
 		RepoNameWithOwner: rd.NameWithOwner,
 		LastUpdate:        rd.LastUpdate,
-		Type:              model.CursorTypeIssue,
-	}); err != nil {
-		return err
-	}
-	if err := storage.CreateCursor(context.Background(), &model.Cursor{
-		RepoNodeID:        rd.Repo.ID,
-		RepoNameWithOwner: rd.NameWithOwner,
 		EndCursor:         rd.EndCursor,
-		Type:              model.CursorTypePR,
 	}); err != nil {
 		return err
 	}
@@ -383,8 +379,31 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 	return nil
 }
 
-func UpdateRepoData() {
+// TODO: INIT 全部插入 issues table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
+//       UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
+//       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
+
+// TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
+//       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
+//       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
+//       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
+
+func UpdateRepoData(ctx context.Context, rd *RepoData) error {
+	// TODO
+	if err := storage.CreateRepository(ctx, &model.Repository{
+		Owner:            rd.Owner,
+		Name:             rd.Name,
+		NodeID:           rd.Repo.ID,
+		OwnerNodeID:      rd.Repo.Owner.ID,
+		IssueCount:       rd.Repo.Issues.TotalCount,
+		PullRequestCount: rd.Repo.PullRequests.TotalCount,
+		StarCount:        rd.Repo.Stargazers.TotalCount,
+		ForkCount:        rd.Repo.Forks.TotalCount,
+		ContributorCount: rd.ContributorCount,
+	}); err != nil {
+		return err
+	}
 }
 
-func DeleteRepos(repos []string) {
+func DeleteRepos(repos []string) error {
 }

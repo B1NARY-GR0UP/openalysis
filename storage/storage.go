@@ -106,3 +106,9 @@ func CreateContributors(ctx context.Context, cs []*model.Contributor) error {
 func CreateCursor(ctx context.Context, cursor *model.Cursor) error {
 	return DB.WithContext(ctx).Create(cursor).Error
 }
+
+func QueryCursor(ctx context.Context, repo string) (*model.Cursor, error) {
+	cursor := &model.Cursor{}
+	err := DB.WithContext(ctx).Where("repo_name_with_owner = ?", repo).First(cursor).Error
+	return cursor, err
+}
