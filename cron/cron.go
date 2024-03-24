@@ -16,6 +16,7 @@ import (
 )
 
 // TODO: 记录每个小 task 的执行耗时
+// TODO: optimize error handling
 
 func Start(ctx context.Context) {
 	errC := make(chan error)
@@ -184,8 +185,8 @@ func UpdateTask(ctx context.Context) {
 				continue
 			}
 
-			_, deleted := util.CompareSlices(cache[login], repos)
-			if err := DeleteRepos(deleted); err != nil {
+			_, deleteNeeded := util.CompareSlices(cache[login], repos)
+			if err := DeleteRepos(deleteNeeded); err != nil {
 				slog.Error("error delete repos", "err", err.Error())
 				continue
 			}
@@ -384,12 +385,12 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 //       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
 
 // TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
+//       这里和 issue 处理方式不同是因为使用 endCursor 进行 update graphql query
 //       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
 //       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
 //       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
 
 func UpdateRepoData(ctx context.Context, rd *RepoData) error {
-	// TODO
 	if err := storage.CreateRepository(ctx, &model.Repository{
 		Owner:            rd.Owner,
 		Name:             rd.Name,
@@ -403,7 +404,93 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	}); err != nil {
 		return err
 	}
+	// handle issue
+	for _, issue := range rd.Issues {
+		// handle update in issues table
+		exist, err := storage.IssueExist(ctx, issue.ID)
+		if err != nil {
+			return err
+		}
+		switch exist {
+		case true:
+			if err := storage.UpdateIssue(ctx, &model.Issue{
+				NodeID:        issue.ID,
+				State:         issue.State,
+				IssueClosedAt: issue.ClosedAt,
+			}); err != nil {
+				return err
+			}
+		case false:
+			if err := storage.CreateIssues(ctx, []*model.Issue{
+				{
+					NodeID:         issue.ID,
+					Author:         issue.Author.Login,
+					AuthorNodeID:   issue.Author.User.ID,
+					RepoNodeID:     issue.Repository.ID,
+					Number:         issue.Number,
+					State:          issue.State,
+					IssueCreatedAt: issue.CreatedAt,
+					IssueClosedAt:  issue.ClosedAt,
+				},
+			}); err != nil {
+				return err
+			}
+		}
+		// handle update in issue_assignees table
+		exist, err = storage.IssueAssigneesExist(ctx, issue.ID)
+		if err != nil {
+			return err
+		}
+		switch exist {
+		case true:
+			switch githubv4.IssueState(issue.State) {
+			case githubv4.IssueStateOpen:
+				var assignees []model.IssueAssignees
+				for _, assignee := range issue.Assignees.Nodes {
+					assignees = append(assignees, model.IssueAssignees{
+						IssueNodeID:    issue.ID,
+						IssueNumber:    issue.Number,
+						IssueURL:       issue.URL,
+						IssueRepoName:  issue.Repository.NameWithOwner,
+						AssigneeNodeID: assignee.ID,
+						AssigneeLogin:  assignee.Login,
+					})
+				}
+				if err := storage.UpdateIssueAssignees(ctx, issue.ID, assignees); err != nil {
+					return err
+				}
+			case githubv4.IssueStateClosed:
+				if err := storage.DeleteIssueAssignees(ctx, issue.ID); err != nil {
+					return err
+				}
+			}
+		case false:
+			if !util.IsEmptySlice(issue.Assignees.Nodes) && githubv4.IssueState(issue.State) == githubv4.IssueStateOpen {
+				var issueAssignees []*model.IssueAssignees
+				for _, assignee := range issue.Assignees.Nodes {
+					issueAssignees = append(issueAssignees, &model.IssueAssignees{
+						IssueNodeID:    issue.ID,
+						IssueNumber:    issue.Number,
+						IssueURL:       issue.URL,
+						IssueRepoName:  issue.Repository.NameWithOwner,
+						AssigneeNodeID: assignee.ID,
+						AssigneeLogin:  assignee.Login,
+					})
+				}
+				if err := storage.CreateIssueAssignees(ctx, issueAssignees); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	// TODO
+	// handle pr
+	for _, pr := range rd.PRs {
+	}
+	return nil
 }
 
 func DeleteRepos(repos []string) error {
+	// TODO
+	return nil
 }

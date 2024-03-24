@@ -65,6 +65,8 @@ func IsEmptySlice[T any](slice []T) bool {
 	return false
 }
 
+// CompareSlices compare elements in  two slices
+// return elements s2 more than s1, s2 less than s1
 func CompareSlices[T comparable](s1, s2 []T) ([]T, []T) {
 	m1 := make(map[T]bool)
 	m2 := make(map[T]bool)

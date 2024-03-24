@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
 	"github.com/B1NARY-GR0UP/openalysis/util"
@@ -75,6 +76,30 @@ func CreateIssues(ctx context.Context, issues []*model.Issue) error {
 	return DB.WithContext(ctx).Create(issues).Error
 }
 
+func IssueExist(ctx context.Context, nodeID string) (bool, error) {
+	var issue model.Issue
+	if err := DB.WithContext(ctx).Where("node_id = ?", nodeID).First(&issue).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func UpdateIssue(ctx context.Context, issue *model.Issue) error {
+	var currentIssue model.Issue
+	if err := DB.WithContext(ctx).Where("node_id = ?", issue.NodeID).First(&currentIssue).Error; err != nil {
+		return err
+	}
+	currentIssue.State = issue.State
+	currentIssue.IssueClosedAt = issue.IssueClosedAt
+	if err := DB.WithContext(ctx).Save(&currentIssue).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func CreatePullRequests(ctx context.Context, prs []*model.PullRequest) error {
 	if util.IsEmptySlice(prs) {
 		return nil
@@ -87,6 +112,41 @@ func CreateIssueAssignees(ctx context.Context, assignees []*model.IssueAssignees
 		return nil
 	}
 	return DB.WithContext(ctx).Create(assignees).Error
+}
+
+func IssueAssigneesExist(ctx context.Context, nodeID string) (bool, error) {
+	var assignees model.IssueAssignees
+	if err := DB.WithContext(ctx).Where("node_id = ?", nodeID).First(&assignees).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func UpdateIssueAssignees(ctx context.Context, issueNodeID string, assignees []model.IssueAssignees) error {
+	if util.IsEmptySlice(assignees) {
+		return nil
+	}
+	var currentAssignees []model.IssueAssignees
+	if err := DB.WithContext(ctx).Where("issue_node_id = ?", issueNodeID).Find(&currentAssignees).Error; err != nil {
+		return err
+	}
+	more, less := util.CompareSlices(currentAssignees, assignees)
+	if err := DB.WithContext(ctx).Create(more).Error; err != nil {
+		return err
+	}
+	for _, e := range less {
+		if err := DB.WithContext(ctx).Where("id = ?", e.ID).Delete(&model.IssueAssignees{}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func DeleteIssueAssignees(ctx context.Context, issueNodeID string) error {
+	return DB.WithContext(ctx).Where("issue_node_id = ?", issueNodeID).Delete(&model.IssueAssignees{}).Error
 }
 
 func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequestAssignees) error {
