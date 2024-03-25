@@ -47,8 +47,6 @@ func Init() {
 	}
 }
 
-// TODO: handle join table and assignees
-
 func CreateGroup(ctx context.Context, group *model.Group) error {
 	return DB.WithContext(ctx).Create(group).Error
 }
@@ -107,6 +105,26 @@ func CreatePullRequests(ctx context.Context, prs []*model.PullRequest) error {
 	return DB.WithContext(ctx).Create(prs).Error
 }
 
+func UpdatePullRequest(ctx context.Context, pr *model.PullRequest) error {
+	var currentPR model.PullRequest
+	if err := DB.WithContext(ctx).Where("node_id = ?", pr.NodeID).First(&currentPR).Error; err != nil {
+		return err
+	}
+	currentPR.State = pr.State
+	currentPR.PRMergedAt = pr.PRMergedAt
+	currentPR.PRClosedAt = pr.PRClosedAt
+	if err := DB.WithContext(ctx).Save(&currentPR).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func QueryOPENPullRequests(ctx context.Context) ([]model.PullRequest, error) {
+	var prs []model.PullRequest
+	err := DB.WithContext(ctx).Where("state = ?", "OPEN").Find(&prs).Error
+	return prs, err
+}
+
 func CreateIssueAssignees(ctx context.Context, assignees []*model.IssueAssignees) error {
 	if util.IsEmptySlice(assignees) {
 		return nil
@@ -154,6 +172,10 @@ func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequ
 		return nil
 	}
 	return DB.WithContext(ctx).Create(assignees).Error
+}
+
+func DeletePullRequestAssignees(ctx context.Context, prNodeID string) error {
+	return nil
 }
 
 func CreateContributors(ctx context.Context, cs []*model.Contributor) error {

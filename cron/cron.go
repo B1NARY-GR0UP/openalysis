@@ -385,7 +385,6 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 //       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
 
 // TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-//       这里和 issue 处理方式不同是因为使用 endCursor 进行 update graphql query
 //       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
 //       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
 //       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
@@ -483,9 +482,62 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			}
 		}
 	}
-	// TODO
 	// handle pr
+	var prs []*model.PullRequest
 	for _, pr := range rd.PRs {
+		prs = append(prs, &model.PullRequest{
+			NodeID:       pr.ID,
+			Author:       pr.Author.Login,
+			AuthorNodeID: pr.Author.User.ID,
+			RepoNodeID:   pr.Repository.ID,
+			Number:       pr.Number,
+			State:        pr.State,
+			PRCreatedAt:  pr.CreatedAt,
+			PRMergedAt:   pr.MergedAt,
+			PRClosedAt:   pr.ClosedAt,
+		})
+		// handle update in pull_request_assignees table
+		if !util.IsEmptySlice(pr.Assignees.Nodes) && githubv4.PullRequestState(pr.State) == githubv4.PullRequestStateOpen {
+			var prAssignees []*model.PullRequestAssignees
+			for _, assignee := range pr.Assignees.Nodes {
+				prAssignees = append(prAssignees, &model.PullRequestAssignees{
+					PullRequestNodeID:   pr.ID,
+					PullRequestNumber:   pr.Number,
+					PullRequestURL:      pr.URL,
+					PullRequestRepoName: pr.Repository.NameWithOwner,
+					AssigneeNodeID:      assignee.ID,
+					AssigneeLogin:       assignee.Login,
+				})
+			}
+			if err := storage.CreatePullRequestAssignees(ctx, prAssignees); err != nil {
+				return err
+			}
+		}
+	}
+	// handle update in pull_requests table
+	if err := storage.CreatePullRequests(ctx, prs); err != nil {
+		return err
+	}
+	openPRs, err := storage.QueryOPENPullRequests(ctx)
+	if err != nil {
+		return err
+	}
+	for _, openPR := range openPRs {
+		pr, err := graphql.QuerySinglePR(ctx, openPR.NodeID)
+		if err != nil {
+			return err
+		}
+		if err := storage.UpdatePullRequest(ctx, &model.PullRequest{
+			NodeID:     pr.ID,
+			State:      pr.State,
+			PRMergedAt: pr.MergedAt,
+			PRClosedAt: pr.ClosedAt,
+		}); err != nil {
+			return err
+		}
+		if state := githubv4.PullRequestState(pr.State); state == githubv4.PullRequestStateMerged || state == githubv4.PullRequestStateClosed {
+			// TODO: delete
+		}
 	}
 	return nil
 }
