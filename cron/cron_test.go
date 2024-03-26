@@ -44,6 +44,25 @@ func TestInitTask(t *testing.T) {
 	InitTask(context.Background()) // 7min 78s (467.58s)
 }
 
+func TestUpdateTask(t *testing.T) {
+	config.Init("../default.yaml")
+	storage.Init()
+	graphql.Init()
+	rest.Init()
+	cache = make(map[string][]string)
+	for _, group := range config.GlobalConfig.Groups {
+		for _, login := range group.Orgs {
+			repos, err := graphql.QueryRepoNameByOrg(context.Background(), login)
+			if err != nil {
+				panic("test panic")
+			}
+
+			cache[login] = repos
+		}
+	}
+	UpdateTask(context.Background())
+}
+
 func TestProgressBar(t *testing.T) {
 	barOut := progressbar.Default(10, "OUT FOR")
 	for _ = range 10 {
