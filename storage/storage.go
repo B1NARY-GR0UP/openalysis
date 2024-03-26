@@ -175,7 +175,7 @@ func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequ
 }
 
 func DeletePullRequestAssignees(ctx context.Context, prNodeID string) error {
-	return nil
+	return DB.WithContext(ctx).Where("pull_request_node_id = ?", prNodeID).Delete(&model.PullRequestAssignees{}).Error
 }
 
 func CreateContributors(ctx context.Context, cs []*model.Contributor) error {
@@ -192,5 +192,8 @@ func CreateCursor(ctx context.Context, cursor *model.Cursor) error {
 func QueryCursor(ctx context.Context, repo string) (*model.Cursor, error) {
 	cursor := &model.Cursor{}
 	err := DB.WithContext(ctx).Where("repo_name_with_owner = ?", repo).First(cursor).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return cursor, nil
+	}
 	return cursor, err
 }

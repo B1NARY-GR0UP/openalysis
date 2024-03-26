@@ -179,6 +179,7 @@ func UpdateTask(ctx context.Context) {
 		for _, login := range group.Orgs {
 			var orgCount Count
 			// TODO: 处理 org 新增 repo 和删除 repo 的情况
+			// TODO: 确保新增的 repo 也进行了处理
 			repos, err := graphql.QueryRepoNameByOrg(ctx, login)
 			if err != nil {
 				slog.Error("error query repo name by org", "err", err.Error())
@@ -484,6 +485,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	}
 	// handle pr
 	var prs []*model.PullRequest
+	var prAssignees []*model.PullRequestAssignees
 	for _, pr := range rd.PRs {
 		prs = append(prs, &model.PullRequest{
 			NodeID:       pr.ID,
@@ -498,7 +500,6 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		})
 		// handle update in pull_request_assignees table
 		if !util.IsEmptySlice(pr.Assignees.Nodes) && githubv4.PullRequestState(pr.State) == githubv4.PullRequestStateOpen {
-			var prAssignees []*model.PullRequestAssignees
 			for _, assignee := range pr.Assignees.Nodes {
 				prAssignees = append(prAssignees, &model.PullRequestAssignees{
 					PullRequestNodeID:   pr.ID,
@@ -509,13 +510,13 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 					AssigneeLogin:       assignee.Login,
 				})
 			}
-			if err := storage.CreatePullRequestAssignees(ctx, prAssignees); err != nil {
-				return err
-			}
 		}
 	}
 	// handle update in pull_requests table
 	if err := storage.CreatePullRequests(ctx, prs); err != nil {
+		return err
+	}
+	if err := storage.CreatePullRequestAssignees(ctx, prAssignees); err != nil {
 		return err
 	}
 	openPRs, err := storage.QueryOPENPullRequests(ctx)
@@ -536,9 +537,12 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			return err
 		}
 		if state := githubv4.PullRequestState(pr.State); state == githubv4.PullRequestStateMerged || state == githubv4.PullRequestStateClosed {
-			// TODO: delete
+			if err := storage.DeletePullRequestAssignees(ctx, pr.ID); err != nil {
+				return err
+			}
 		}
 	}
+	// TODO: contributor, cursor
 	return nil
 }
 
