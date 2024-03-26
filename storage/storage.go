@@ -185,6 +185,17 @@ func CreateContributors(ctx context.Context, cs []*model.Contributor) error {
 	return DB.WithContext(ctx).Create(cs).Error
 }
 
+func UpdateOrCreateContributors(ctx context.Context, cs []*model.Contributor) error {
+	for _, contributor := range cs {
+		if err := DB.WithContext(ctx).Where(model.Contributor{
+			NodeID: contributor.NodeID,
+		}).Assign(contributor).FirstOrCreate(contributor).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func CreateCursor(ctx context.Context, cursor *model.Cursor) error {
 	return DB.WithContext(ctx).Create(cursor).Error
 }
@@ -196,4 +207,17 @@ func QueryCursor(ctx context.Context, repo string) (*model.Cursor, error) {
 		return cursor, nil
 	}
 	return cursor, err
+}
+
+func UpdateCursor(ctx context.Context, cursor *model.Cursor) error {
+	var currentCursor model.Cursor
+	if err := DB.WithContext(ctx).Where("repo_node_id = ?", cursor.RepoNodeID).First(&currentCursor).Error; err != nil {
+		return err
+	}
+	currentCursor.LastUpdate = cursor.LastUpdate
+	currentCursor.EndCursor = cursor.EndCursor
+	if err := DB.WithContext(ctx).Save(&currentCursor).Error; err != nil {
+		return err
+	}
+	return nil
 }

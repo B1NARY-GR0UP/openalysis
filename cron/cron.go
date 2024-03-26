@@ -542,7 +542,15 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			}
 		}
 	}
-	// TODO: contributor, cursor
+	if err := storage.UpdateCursor(ctx, &model.Cursor{
+		LastUpdate: rd.LastUpdate,
+		EndCursor:  rd.EndCursor,
+	}); err != nil {
+		return err
+	}
+	if err := storage.UpdateOrCreateContributors(ctx, rd.Contributors); err != nil {
+		return err
+	}
 	return nil
 }
 
