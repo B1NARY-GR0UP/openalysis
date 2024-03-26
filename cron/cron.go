@@ -183,7 +183,6 @@ func UpdateTask(ctx context.Context) {
 				slog.Error("error query org info", "err", err.Error())
 				continue
 			}
-			// TODO: 处理 org 新增 repo 和删除 repo 的情况
 			repos, err := graphql.QueryRepoNameByOrg(ctx, login)
 			if err != nil {
 				slog.Error("error query repo name by org", "err", err.Error())
@@ -191,7 +190,7 @@ func UpdateTask(ctx context.Context) {
 			}
 
 			_, deleteNeeded := util.CompareSlices(cache[login], repos)
-			if err := DeleteRepos(deleteNeeded); err != nil {
+			if err := DeleteRepos(ctx, deleteNeeded); err != nil {
 				slog.Error("error delete repos", "err", err.Error())
 				continue
 			}
@@ -520,7 +519,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 					return err
 				}
 			case githubv4.IssueStateClosed:
-				if err := storage.DeleteIssueAssignees(ctx, issue.ID); err != nil {
+				if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
 					return err
 				}
 			}
@@ -597,7 +596,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			return err
 		}
 		if state := githubv4.PullRequestState(pr.State); state == githubv4.PullRequestStateMerged || state == githubv4.PullRequestStateClosed {
-			if err := storage.DeletePullRequestAssignees(ctx, pr.ID); err != nil {
+			if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
 				return err
 			}
 		}
@@ -614,7 +613,31 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	return nil
 }
 
-func DeleteRepos(repos []string) error {
-	// TODO
+func DeleteRepos(ctx context.Context, repos []string) error {
+	for _, repo := range repos {
+		owner, name := util.SplitNameWithOwner(repo)
+		id, err := storage.QueryRepositoryNodeID(ctx, owner, name)
+		if err != nil {
+			return err
+		}
+		if err := storage.DeleteRepository(ctx, id); err != nil {
+			return err
+		}
+		if err := storage.DeleteIssues(ctx, id); err != nil {
+			return err
+		}
+		if err := storage.DeleteIssueAssigneesByRepo(ctx, repo); err != nil {
+			return err
+		}
+		if err := storage.DeletePullRequests(ctx, id); err != nil {
+			return err
+		}
+		if err := storage.DeletePullRequestAssigneesByRepo(ctx, repo); err != nil {
+			return err
+		}
+		if err := storage.DeleteCursor(ctx, id); err != nil {
+			return err
+		}
+	}
 	return nil
 }

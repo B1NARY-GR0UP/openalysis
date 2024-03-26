@@ -91,6 +91,19 @@ func CreateRepository(ctx context.Context, repo *model.Repository) error {
 	return DB.WithContext(ctx).Create(repo).Error
 }
 
+func QueryRepositoryNodeID(ctx context.Context, owner, name string) (string, error) {
+	var repo model.Repository
+	err := DB.WithContext(ctx).Where(model.Repository{
+		Owner: owner,
+		Name:  name,
+	}).First(&repo).Error
+	return repo.NodeID, err
+}
+
+func DeleteRepository(ctx context.Context, nodeID string) error {
+	return DB.WithContext(ctx).Where("node_id = ?", nodeID).Delete(&model.Repository{}).Error
+}
+
 func CreateGroupsOrganizations(ctx context.Context, join *model.GroupsOrganizations) error {
 	return DB.WithContext(ctx).Create(join).Error
 }
@@ -130,6 +143,10 @@ func UpdateIssue(ctx context.Context, issue *model.Issue) error {
 	return nil
 }
 
+func DeleteIssues(ctx context.Context, repoNodeID string) error {
+	return DB.WithContext(ctx).Where("repo_node_id = ?", repoNodeID).Delete(&model.Issue{}).Error
+}
+
 func CreatePullRequests(ctx context.Context, prs []*model.PullRequest) error {
 	if util.IsEmptySlice(prs) {
 		return nil
@@ -149,6 +166,10 @@ func UpdatePullRequest(ctx context.Context, pr *model.PullRequest) error {
 		return err
 	}
 	return nil
+}
+
+func DeletePullRequests(ctx context.Context, repoNodeID string) error {
+	return DB.WithContext(ctx).Where("repo_node_id = ?", repoNodeID).Delete(&model.PullRequest{}).Error
 }
 
 func QueryOPENPullRequests(ctx context.Context) ([]model.PullRequest, error) {
@@ -195,8 +216,12 @@ func UpdateIssueAssignees(ctx context.Context, issueNodeID string, assignees []m
 	return nil
 }
 
-func DeleteIssueAssignees(ctx context.Context, issueNodeID string) error {
+func DeleteIssueAssigneesByIssue(ctx context.Context, issueNodeID string) error {
 	return DB.WithContext(ctx).Where("issue_node_id = ?", issueNodeID).Delete(&model.IssueAssignees{}).Error
+}
+
+func DeleteIssueAssigneesByRepo(ctx context.Context, nameWithOwner string) error {
+	return DB.WithContext(ctx).Where("issue_repo_name = ?", nameWithOwner).Delete(&model.IssueAssignees{}).Error
 }
 
 func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequestAssignees) error {
@@ -206,8 +231,12 @@ func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequ
 	return DB.WithContext(ctx).Create(assignees).Error
 }
 
-func DeletePullRequestAssignees(ctx context.Context, prNodeID string) error {
+func DeletePullRequestAssigneesByPR(ctx context.Context, prNodeID string) error {
 	return DB.WithContext(ctx).Where("pull_request_node_id = ?", prNodeID).Delete(&model.PullRequestAssignees{}).Error
+}
+
+func DeletePullRequestAssigneesByRepo(ctx context.Context, nameWithOwner string) error {
+	return DB.WithContext(ctx).Where("pull_request_repo_name = ?", nameWithOwner).Delete(&model.PullRequestAssignees{}).Error
 }
 
 func CreateContributors(ctx context.Context, cs []*model.Contributor) error {
@@ -252,4 +281,8 @@ func UpdateCursor(ctx context.Context, cursor *model.Cursor) error {
 		return err
 	}
 	return nil
+}
+
+func DeleteCursor(ctx context.Context, repoNodeID string) error {
+	return DB.WithContext(ctx).Where("repo_node_id = ?", repoNodeID).Delete(&model.Cursor{}).Error
 }

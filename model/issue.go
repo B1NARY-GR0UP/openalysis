@@ -28,9 +28,10 @@ type Issue struct {
 type IssueAssignees struct {
 	gorm.Model
 
-	IssueNodeID   string
-	IssueNumber   int
-	IssueURL      string
+	IssueNodeID string
+	IssueNumber int
+	IssueURL    string
+	// repo name with owner
 	IssueRepoName string
 
 	AssigneeNodeID string

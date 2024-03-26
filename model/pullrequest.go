@@ -29,9 +29,10 @@ type PullRequest struct {
 type PullRequestAssignees struct {
 	gorm.Model
 
-	PullRequestNodeID   string
-	PullRequestNumber   int
-	PullRequestURL      string
+	PullRequestNodeID string
+	PullRequestNumber int
+	PullRequestURL    string
+	// repo name with owner
 	PullRequestRepoName string
 
 	AssigneeNodeID string
