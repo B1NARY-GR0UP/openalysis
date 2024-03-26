@@ -9,6 +9,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/robfig/cron/v3"
+	"github.com/schollz/progressbar/v3"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
@@ -51,6 +52,12 @@ type Count struct {
 
 // InitTask TODO: 添加进度条显示
 func InitTask(ctx context.Context) {
+	var total int
+	for _, group := range config.GlobalConfig.Groups {
+		total += len(group.Orgs) + len(group.Repos)
+	}
+	bar := progressbar.Default(int64(total), "Init Task")
+
 	// init cache
 	cache = make(map[string][]string)
 	// handle groups
@@ -58,6 +65,8 @@ func InitTask(ctx context.Context) {
 		var groupCount Count
 		// handle orgs in groups
 		for _, login := range group.Orgs {
+			_ = bar.Add(1)
+
 			var orgCount Count
 			// org data
 			org, err := graphql.QueryOrgInfo(ctx, login)
@@ -128,6 +137,8 @@ func InitTask(ctx context.Context) {
 		}
 		// handle repos in group
 		for _, nameWithOwner := range group.Repos {
+			_ = bar.Add(1)
+
 			owner, name := util.SplitNameWithOwner(nameWithOwner)
 			rd := &RepoData{
 				Owner:         owner,
@@ -174,9 +185,17 @@ func InitTask(ctx context.Context) {
 }
 
 func UpdateTask(ctx context.Context) {
+	var total int
+	for _, group := range config.GlobalConfig.Groups {
+		total += len(group.Orgs) + len(group.Repos)
+	}
+	bar := progressbar.Default(int64(total), "Update Task")
+
 	for _, group := range config.GlobalConfig.Groups {
 		var groupCount Count
 		for _, login := range group.Orgs {
+			_ = bar.Add(1)
+
 			var orgCount Count
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
@@ -246,6 +265,8 @@ func UpdateTask(ctx context.Context) {
 			}
 		}
 		for _, nameWithOwner := range group.Repos {
+			_ = bar.Add(1)
+
 			owner, name := util.SplitNameWithOwner(nameWithOwner)
 			rd := &RepoData{
 				Owner:         owner,
