@@ -191,6 +191,7 @@ func UpdateTask(ctx context.Context) {
 			}
 
 			_, deleteNeeded := util.CompareSlices(cache[login], repos)
+			// TODO: check needed
 			if err := DeleteRepos(ctx, deleteNeeded); err != nil {
 				slog.Error("error delete repos", "err", err.Error())
 				continue
@@ -516,8 +517,14 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 						AssigneeLogin:  assignee.Login,
 					})
 				}
-				if err := storage.UpdateIssueAssignees(ctx, issue.ID, assignees); err != nil {
-					return err
+				if util.IsEmptySlice(assignees) {
+					if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
+						return err
+					}
+				} else {
+					if err := storage.UpdateIssueAssignees(ctx, issue.ID, assignees); err != nil {
+						return err
+					}
 				}
 			case githubv4.IssueStateClosed:
 				if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
@@ -544,6 +551,44 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}
 	}
 	// handle pr
+	openPRs, err := storage.QueryOPENPullRequests(ctx)
+	if err != nil {
+		return err
+	}
+	for _, openPR := range openPRs {
+		pr, err := graphql.QuerySinglePR(ctx, openPR.NodeID)
+		if err != nil {
+			return err
+		}
+		if err := storage.UpdatePullRequest(ctx, &model.PullRequest{
+			NodeID:     pr.ID,
+			State:      pr.State,
+			PRMergedAt: pr.MergedAt,
+			PRClosedAt: pr.ClosedAt,
+		}); err != nil {
+			return err
+		}
+		// TODO: update pr assignees
+		// TODO: 查看 assignees 表中是否存在记录，如果存在记录并且 graphql 查询的 assignees 不为空则覆盖更新 assignees
+		// TODO: 如果存在记录但 graphql 查询的 assignees 为空则从 assignees 表中删除
+		// TODO: 如果不存在记录，但是 graphql 查询的 assignees 不为空则新增记录
+		// TODO: 如果不存在记录，但是 graphql 查询的 assignees 为空则不处理
+		switch state := githubv4.PullRequestState(pr.State); state {
+		case githubv4.PullRequestStateOpen:
+			exist, err := storage.PullRequestAssigneesExist(ctx, pr.ID)
+			if err != nil {
+				return err
+			}
+			switch exist {
+			case true:
+			case false:
+			}
+		case githubv4.PullRequestStateMerged, githubv4.PullRequestStateClosed:
+			if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
+				return err
+			}
+		}
+	}
 	var prs []*model.PullRequest
 	var prAssignees []*model.PullRequestAssignees
 	for _, pr := range rd.PRs {
@@ -579,34 +624,13 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	if err := storage.CreatePullRequestAssignees(ctx, prAssignees); err != nil {
 		return err
 	}
-	openPRs, err := storage.QueryOPENPullRequests(ctx)
-	if err != nil {
-		return err
-	}
-	for _, openPR := range openPRs {
-		pr, err := graphql.QuerySinglePR(ctx, openPR.NodeID)
-		if err != nil {
-			return err
-		}
-		if err := storage.UpdatePullRequest(ctx, &model.PullRequest{
-			NodeID:     pr.ID,
-			State:      pr.State,
-			PRMergedAt: pr.MergedAt,
-			PRClosedAt: pr.ClosedAt,
+	if !rd.LastUpdate.IsZero() || rd.EndCursor != "" {
+		if err := storage.UpdateCursor(ctx, &model.Cursor{
+			LastUpdate: rd.LastUpdate,
+			EndCursor:  rd.EndCursor,
 		}); err != nil {
 			return err
 		}
-		if state := githubv4.PullRequestState(pr.State); state == githubv4.PullRequestStateMerged || state == githubv4.PullRequestStateClosed {
-			if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
-				return err
-			}
-		}
-	}
-	if err := storage.UpdateCursor(ctx, &model.Cursor{
-		LastUpdate: rd.LastUpdate,
-		EndCursor:  rd.EndCursor,
-	}); err != nil {
-		return err
 	}
 	if err := storage.UpdateOrCreateContributors(ctx, rd.Contributors); err != nil {
 		return err

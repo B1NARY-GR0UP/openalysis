@@ -187,7 +187,7 @@ func CreateIssueAssignees(ctx context.Context, assignees []*model.IssueAssignees
 
 func IssueAssigneesExist(ctx context.Context, nodeID string) (bool, error) {
 	var assignees model.IssueAssignees
-	if err := DB.WithContext(ctx).Where("node_id = ?", nodeID).First(&assignees).Error; err != nil {
+	if err := DB.WithContext(ctx).Where("issue_node_id = ?", nodeID).First(&assignees).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
 		}
@@ -222,6 +222,17 @@ func DeleteIssueAssigneesByIssue(ctx context.Context, issueNodeID string) error 
 
 func DeleteIssueAssigneesByRepo(ctx context.Context, nameWithOwner string) error {
 	return DB.WithContext(ctx).Where("issue_repo_name = ?", nameWithOwner).Delete(&model.IssueAssignees{}).Error
+}
+
+func PullRequestAssigneesExist(ctx context.Context, nodeID string) (bool, error) {
+	var assignees model.PullRequestAssignees
+	if err := DB.WithContext(ctx).Where("pull_request_node_id = ?", nodeID).First(&assignees).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequestAssignees) error {
@@ -264,6 +275,7 @@ func CreateCursor(ctx context.Context, cursor *model.Cursor) error {
 func QueryCursor(ctx context.Context, repo string) (*model.Cursor, error) {
 	cursor := &model.Cursor{}
 	err := DB.WithContext(ctx).Where("repo_name_with_owner = ?", repo).First(cursor).Error
+	// for organization's new repository case
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return cursor, nil
 	}
