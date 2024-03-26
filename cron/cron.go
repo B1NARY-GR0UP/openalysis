@@ -58,7 +58,6 @@ func InitTask(ctx context.Context) {
 		var groupCount Count
 		// handle orgs in groups
 		for _, login := range group.Orgs {
-
 			var orgCount Count
 			// org data
 			org, err := graphql.QueryOrgInfo(ctx, login)
@@ -174,11 +173,11 @@ func InitTask(ctx context.Context) {
 	}
 }
 
+// UpdateTask TODO: fix bug
 func UpdateTask(ctx context.Context) {
 	for _, group := range config.GlobalConfig.Groups {
 		var groupCount Count
 		for _, login := range group.Orgs {
-
 			var orgCount Count
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
