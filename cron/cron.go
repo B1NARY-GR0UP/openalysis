@@ -178,8 +178,12 @@ func UpdateTask(ctx context.Context) {
 		var groupCount Count
 		for _, login := range group.Orgs {
 			var orgCount Count
+			org, err := graphql.QueryOrgInfo(ctx, login)
+			if err != nil {
+				slog.Error("error query org info", "err", err.Error())
+				continue
+			}
 			// TODO: 处理 org 新增 repo 和删除 repo 的情况
-			// TODO: 确保新增的 repo 也进行了处理
 			repos, err := graphql.QueryRepoNameByOrg(ctx, login)
 			if err != nil {
 				slog.Error("error query repo name by org", "err", err.Error())
@@ -211,7 +215,6 @@ func UpdateTask(ctx context.Context) {
 					slog.Error("error fetch repo data", "err", err.Error())
 					continue
 				}
-				// TODO
 				if err := UpdateRepoData(ctx, rd); err != nil {
 					slog.Error("error update repo data", "err", err.Error())
 					continue
@@ -224,6 +227,63 @@ func UpdateTask(ctx context.Context) {
 					orgCount.ContributorCount += rd.ContributorCount
 				}
 			}
+			if err := storage.UpdateOrganization(ctx, &model.Organization{
+				NodeID:           org.ID,
+				IssueCount:       orgCount.IssueCount,
+				PullRequestCount: orgCount.PullRequestCount,
+				StarCount:        orgCount.StarCount,
+				ForkCount:        orgCount.ForkCount,
+				ContributorCount: orgCount.ContributorCount,
+			}); err != nil {
+				slog.Error("error update org", "err", err.Error())
+				continue
+			}
+			{
+				groupCount.IssueCount += orgCount.IssueCount
+				groupCount.PullRequestCount += orgCount.PullRequestCount
+				groupCount.StarCount += orgCount.StarCount
+				groupCount.ForkCount += orgCount.ForkCount
+				groupCount.ContributorCount += orgCount.ContributorCount
+			}
+		}
+		for _, nameWithOwner := range group.Repos {
+			owner, name := util.SplitNameWithOwner(nameWithOwner)
+			rd := &RepoData{
+				Owner:         owner,
+				Name:          name,
+				NameWithOwner: nameWithOwner,
+			}
+			cursor, err := storage.QueryCursor(ctx, nameWithOwner)
+			if err != nil {
+				slog.Error("error query cursor", "err", err.Error())
+				continue
+			}
+			if err := FetchRepoData(ctx, rd, cursor.LastUpdate, cursor.EndCursor); err != nil {
+				slog.Error("error fetch repo data", "err", err.Error())
+				continue
+			}
+			if err := UpdateRepoData(ctx, rd); err != nil {
+				slog.Error("error update repo data", "err", err.Error())
+				continue
+			}
+			{
+				groupCount.IssueCount += rd.Repo.Issues.TotalCount
+				groupCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
+				groupCount.StarCount += rd.Repo.Stargazers.TotalCount
+				groupCount.ForkCount += rd.Repo.Forks.TotalCount
+				groupCount.ContributorCount += rd.ContributorCount
+			}
+		}
+		if err := storage.UpdateGroup(ctx, &model.Group{
+			Name:             group.Name,
+			IssueCount:       groupCount.IssueCount,
+			PullRequestCount: groupCount.PullRequestCount,
+			StarCount:        groupCount.StarCount,
+			ForkCount:        groupCount.ForkCount,
+			ContributorCount: groupCount.ContributorCount,
+		}); err != nil {
+			slog.Error("error update group", "err", err.Error())
+			continue
 		}
 	}
 }

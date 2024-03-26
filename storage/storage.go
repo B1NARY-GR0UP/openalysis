@@ -51,8 +51,40 @@ func CreateGroup(ctx context.Context, group *model.Group) error {
 	return DB.WithContext(ctx).Create(group).Error
 }
 
+func UpdateGroup(ctx context.Context, group *model.Group) error {
+	var currentGroup model.Group
+	if err := DB.WithContext(ctx).Where("name = ?", group.Name).First(&currentGroup).Error; err != nil {
+		return err
+	}
+	currentGroup.IssueCount = group.IssueCount
+	currentGroup.PullRequestCount = group.PullRequestCount
+	currentGroup.StarCount = group.StarCount
+	currentGroup.ForkCount = group.ForkCount
+	currentGroup.ContributorCount = group.ContributorCount
+	if err := DB.WithContext(ctx).Save(&currentGroup).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func CreateOrganization(ctx context.Context, org *model.Organization) error {
 	return DB.WithContext(ctx).Create(org).Error
+}
+
+func UpdateOrganization(ctx context.Context, org *model.Organization) error {
+	var currentOrg model.Organization
+	if err := DB.WithContext(ctx).Where("node_id = ?", org.ID).First(&currentOrg).Error; err != nil {
+		return err
+	}
+	currentOrg.IssueCount = org.IssueCount
+	currentOrg.PullRequestCount = org.PullRequestCount
+	currentOrg.StarCount = org.StarCount
+	currentOrg.ForkCount = org.ForkCount
+	currentOrg.ContributorCount = org.ContributorCount
+	if err := DB.WithContext(ctx).Save(&currentOrg).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func CreateRepository(ctx context.Context, repo *model.Repository) error {
