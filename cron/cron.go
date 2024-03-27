@@ -507,6 +507,18 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 				return err
 			}
 		}
+		// assignees of latest issue
+		var assignees []*model.IssueAssignees
+		for _, assignee := range issue.Assignees.Nodes {
+			assignees = append(assignees, &model.IssueAssignees{
+				IssueNodeID:    issue.ID,
+				IssueNumber:    issue.Number,
+				IssueURL:       issue.URL,
+				IssueRepoName:  issue.Repository.NameWithOwner,
+				AssigneeNodeID: assignee.ID,
+				AssigneeLogin:  assignee.Login,
+			})
+		}
 		// handle update in issue_assignees table
 		exist, err = storage.IssueAssigneesExist(ctx, issue.ID)
 		if err != nil {
@@ -518,17 +530,6 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			switch githubv4.IssueState(issue.State) {
 			// after update the issue is still open
 			case githubv4.IssueStateOpen:
-				var assignees []*model.IssueAssignees
-				for _, assignee := range issue.Assignees.Nodes {
-					assignees = append(assignees, &model.IssueAssignees{
-						IssueNodeID:    issue.ID,
-						IssueNumber:    issue.Number,
-						IssueURL:       issue.URL,
-						IssueRepoName:  issue.Repository.NameWithOwner,
-						AssigneeNodeID: assignee.ID,
-						AssigneeLogin:  assignee.Login,
-					})
-				}
 				if util.IsEmptySlice(assignees) {
 					// remove from issue_assignees because no assignees
 					if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
@@ -551,19 +552,8 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		case false:
 			// judge if issue has assignees
 			if !util.IsEmptySlice(issue.Assignees.Nodes) && githubv4.IssueState(issue.State) == githubv4.IssueStateOpen {
-				var issueAssignees []*model.IssueAssignees
-				for _, assignee := range issue.Assignees.Nodes {
-					issueAssignees = append(issueAssignees, &model.IssueAssignees{
-						IssueNodeID:    issue.ID,
-						IssueNumber:    issue.Number,
-						IssueURL:       issue.URL,
-						IssueRepoName:  issue.Repository.NameWithOwner,
-						AssigneeNodeID: assignee.ID,
-						AssigneeLogin:  assignee.Login,
-					})
-				}
 				// insert into issue_assignees
-				if err := storage.CreateIssueAssignees(ctx, issueAssignees); err != nil {
+				if err := storage.CreateIssueAssignees(ctx, assignees); err != nil {
 					return err
 				}
 			}
@@ -591,28 +581,29 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}); err != nil {
 			return err
 		}
-		switch state := githubv4.PullRequestState(pr.State); state {
-		// still open
-		case githubv4.PullRequestStateOpen:
-			var assignees []*model.PullRequestAssignees
-			for _, assignee := range pr.Assignees.Nodes {
-				assignees = append(assignees, &model.PullRequestAssignees{
-					PullRequestNodeID:   pr.ID,
-					PullRequestNumber:   pr.Number,
-					PullRequestURL:      pr.URL,
-					PullRequestRepoName: pr.Repository.NameWithOwner,
-					AssigneeNodeID:      assignee.ID,
-					AssigneeLogin:       assignee.Login,
-				})
-			}
-			// judge if old pr has assignees (openPR.NodeID == pr.ID)
-			exist, err := storage.PullRequestAssigneesExist(ctx, pr.ID)
-			if err != nil {
-				return err
-			}
-			switch exist {
-			// old open pr has assignees
-			case true:
+		// latest assignees of each pr
+		var assignees []*model.PullRequestAssignees
+		for _, assignee := range pr.Assignees.Nodes {
+			assignees = append(assignees, &model.PullRequestAssignees{
+				PullRequestNodeID:   pr.ID,
+				PullRequestNumber:   pr.Number,
+				PullRequestURL:      pr.URL,
+				PullRequestRepoName: pr.Repository.NameWithOwner,
+				AssigneeNodeID:      assignee.ID,
+				AssigneeLogin:       assignee.Login,
+			})
+		}
+		// judge if old pr has assignees (openPR.NodeID == pr.ID)
+		exist, err := storage.PullRequestAssigneesExist(ctx, pr.ID)
+		if err != nil {
+			return err
+		}
+		switch exist {
+		// old open pr has assignees
+		case true:
+			switch githubv4.PullRequestState(pr.State) {
+			// still open
+			case githubv4.PullRequestStateOpen:
 				if !util.IsEmptySlice(assignees) {
 					// if latest pr still have assignees then overlay update
 					if err := storage.UpdatePullRequestAssignees(ctx, pr.ID, assignees); err != nil {
@@ -624,22 +615,23 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 						return err
 					}
 				}
-			// old open pr does not have assignees
-			case false:
-				if !util.IsEmptySlice(assignees) {
-					// latest open pr has assignees then insert into db
-					if err := storage.CreatePullRequestAssignees(ctx, assignees); err != nil {
-						return err
-					}
+			// old open pr is closed or merged
+			case githubv4.PullRequestStateMerged, githubv4.PullRequestStateClosed:
+				if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
+					return err
 				}
 			}
-		// old open pr is closed or merged
-		case githubv4.PullRequestStateMerged, githubv4.PullRequestStateClosed:
-			if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
-				return err
+		// old open pr does not have assignees
+		case false:
+			if !util.IsEmptySlice(assignees) {
+				// latest open pr has assignees then insert into db
+				if err := storage.CreatePullRequestAssignees(ctx, assignees); err != nil {
+					return err
+				}
 			}
 		}
 	}
+	// TODO: check logic
 	// handle new pull requests
 	var prs []*model.PullRequest
 	var prAssignees []*model.PullRequestAssignees
