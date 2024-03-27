@@ -51,7 +51,6 @@ type Count struct {
 	ContributorCount int
 }
 
-// InitTask TODO: 添加进度条显示
 func InitTask(ctx context.Context) {
 	// init cache
 	cache = make(map[string][]string)
@@ -443,21 +442,6 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 	return nil
 }
 
-// TODO: INIT 全部插入 issues table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-//       UPDATE 判断 issues table 中是否存在，如果存在则进行覆盖更新，如果不存在则插入 issues table; 在循环中判断是否在 assignees table 中，
-//       如果在并且 graphql 查询得到的状态为 OPEN 就覆盖更新，CLOSED 就删除，如果不在则判断是否有 assignees 且状态是 OPEN，都满足的话插入 assignees table
-
-// TODO: INIT 全部插入 prs table; 在循环中判断，如果有 assignees 且状态是 OPEN 则插入 assignees table
-//       UPDATE 全部插入 prs table，循环判断是否有 OPEN 并且有 assignees 的 pr，如果有则插入 assignees table;
-//       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
-//       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
-
-// TODO: update pr assignees
-// TODO: 查看 assignees 表中是否存在记录，如果存在记录并且 graphql 查询的 assignees 不为空则覆盖更新 assignees
-// TODO: 如果存在记录但 graphql 查询的 assignees 为空则从 assignees 表中删除
-// TODO: 如果不存在记录，但是 graphql 查询的 assignees 不为空则新增记录
-// TODO: 如果不存在记录，但是 graphql 查询的 assignees 为空则不处理
-
 func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	// create repo in each update task due to time series graph
 	if err := storage.CreateRepository(ctx, &model.Repository{
@@ -482,7 +466,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}
 		switch exist {
 		case true:
-			// update issues in db
+			// overlay update issues in db
 			if err := storage.UpdateIssue(ctx, &model.Issue{
 				NodeID:        issue.ID,
 				State:         issue.State,
@@ -581,7 +565,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}); err != nil {
 			return err
 		}
-		// latest assignees of each pr
+		// latest assignees of each old open pr
 		var assignees []*model.PullRequestAssignees
 		for _, assignee := range pr.Assignees.Nodes {
 			assignees = append(assignees, &model.PullRequestAssignees{
@@ -593,7 +577,8 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 				AssigneeLogin:       assignee.Login,
 			})
 		}
-		// judge if old pr has assignees (openPR.NodeID == pr.ID)
+		// judge if old pr has assignees
+		// NOTE: openPR.NodeID == pr.ID
 		exist, err := storage.PullRequestAssigneesExist(ctx, pr.ID)
 		if err != nil {
 			return err
@@ -623,7 +608,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			}
 		// old open pr does not have assignees
 		case false:
-			if !util.IsEmptySlice(assignees) {
+			if !util.IsEmptySlice(assignees) && githubv4.PullRequestState(pr.State) == githubv4.PullRequestStateOpen {
 				// latest open pr has assignees then insert into db
 				if err := storage.CreatePullRequestAssignees(ctx, assignees); err != nil {
 					return err
@@ -631,7 +616,6 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			}
 		}
 	}
-	// TODO: check logic
 	// handle new pull requests
 	var prs []*model.PullRequest
 	var prAssignees []*model.PullRequestAssignees
