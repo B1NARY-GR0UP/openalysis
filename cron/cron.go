@@ -191,7 +191,6 @@ func UpdateTask(ctx context.Context) {
 			}
 
 			_, deleteNeeded := util.CompareSlices(cache[login], repos)
-			// TODO: check needed
 			if err := DeleteRepos(ctx, deleteNeeded); err != nil {
 				slog.Error("error delete repos", "err", err.Error())
 				continue
@@ -664,6 +663,9 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 }
 
 func DeleteRepos(ctx context.Context, repos []string) error {
+	if util.IsEmptySlice(repos) {
+		return nil
+	}
 	for _, repo := range repos {
 		owner, name := util.SplitNameWithOwner(repo)
 		id, err := storage.QueryRepositoryNodeID(ctx, owner, name)

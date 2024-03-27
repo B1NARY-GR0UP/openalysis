@@ -258,7 +258,11 @@ func QueryPRInfoByRepo(ctx context.Context, owner, name, endCursor string) ([]PR
 		}
 		variables["prAfter"] = githubv4.NewString(githubv4.String(query.Repository.PullRequests.PageInfo.EndCursor))
 	}
-	return prs, query.Repository.PullRequests.PageInfo.EndCursor, nil
+	cursor := query.Repository.PullRequests.PageInfo.EndCursor
+	if cursor == "" {
+		cursor = endCursor
+	}
+	return prs, cursor, nil
 }
 
 type SinglePR struct {

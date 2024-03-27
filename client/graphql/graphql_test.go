@@ -77,7 +77,7 @@ func TestQueryPRInfo(t *testing.T) {
 		panic(err.Error())
 	}
 	Init()
-	prs, _, err := QueryPRInfoByRepo(context.Background(), "cloudwego", "hertz", "")
+	prs, cursor, err := QueryPRInfoByRepo(context.Background(), "B1NARY-GR0UP", "phos", "")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -85,6 +85,18 @@ func TestQueryPRInfo(t *testing.T) {
 	for _, pr := range prs {
 		fmt.Println(pr)
 	}
+
+	fmt.Println("cursor: ", cursor)
+
+	prs, cursor, err = QueryPRInfoByRepo(context.Background(), "B1NARY-GR0UP", "phos", cursor)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println(len(prs))
+	for _, pr := range prs {
+		fmt.Println(pr)
+	}
+	fmt.Println("cursor: ", cursor)
 }
 
 func TestQuerySinglePR(t *testing.T) {
