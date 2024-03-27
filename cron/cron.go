@@ -506,9 +506,9 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		case true:
 			switch githubv4.IssueState(issue.State) {
 			case githubv4.IssueStateOpen:
-				var assignees []model.IssueAssignees
+				var assignees []*model.IssueAssignees
 				for _, assignee := range issue.Assignees.Nodes {
-					assignees = append(assignees, model.IssueAssignees{
+					assignees = append(assignees, &model.IssueAssignees{
 						IssueNodeID:    issue.ID,
 						IssueNumber:    issue.Number,
 						IssueURL:       issue.URL,
@@ -575,13 +575,38 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		// TODO: 如果不存在记录，但是 graphql 查询的 assignees 为空则不处理
 		switch state := githubv4.PullRequestState(pr.State); state {
 		case githubv4.PullRequestStateOpen:
+			var assignees []*model.PullRequestAssignees
+			for _, assignee := range pr.Assignees.Nodes {
+				assignees = append(assignees, &model.PullRequestAssignees{
+					PullRequestNodeID:   pr.ID,
+					PullRequestNumber:   pr.Number,
+					PullRequestURL:      pr.URL,
+					PullRequestRepoName: pr.Repository.NameWithOwner,
+					AssigneeNodeID:      assignee.ID,
+					AssigneeLogin:       assignee.Login,
+				})
+			}
 			exist, err := storage.PullRequestAssigneesExist(ctx, pr.ID)
 			if err != nil {
 				return err
 			}
 			switch exist {
 			case true:
+				if !util.IsEmptySlice(assignees) {
+					if err := storage.UpdatePullRequestAssignees(ctx, pr.ID, assignees); err != nil {
+						return err
+					}
+				} else {
+					if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
+						return err
+					}
+				}
 			case false:
+				if !util.IsEmptySlice(assignees) {
+					if err := storage.CreatePullRequestAssignees(ctx, assignees); err != nil {
+						return err
+					}
+				}
 			}
 		case githubv4.PullRequestStateMerged, githubv4.PullRequestStateClosed:
 			if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {

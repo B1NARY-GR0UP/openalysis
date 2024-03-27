@@ -22,5 +22,4 @@ func TestCompareSlices(t *testing.T) {
 		"hello": true,
 	}
 	fmt.Println(m["world"])
-
 }

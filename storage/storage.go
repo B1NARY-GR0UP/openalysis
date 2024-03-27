@@ -196,11 +196,11 @@ func IssueAssigneesExist(ctx context.Context, nodeID string) (bool, error) {
 	return true, nil
 }
 
-func UpdateIssueAssignees(ctx context.Context, issueNodeID string, assignees []model.IssueAssignees) error {
+func UpdateIssueAssignees(ctx context.Context, issueNodeID string, assignees []*model.IssueAssignees) error {
 	if util.IsEmptySlice(assignees) {
 		return nil
 	}
-	var currentAssignees []model.IssueAssignees
+	var currentAssignees []*model.IssueAssignees
 	if err := DB.WithContext(ctx).Where("issue_node_id = ?", issueNodeID).Find(&currentAssignees).Error; err != nil {
 		return err
 	}
@@ -240,6 +240,26 @@ func CreatePullRequestAssignees(ctx context.Context, assignees []*model.PullRequ
 		return nil
 	}
 	return DB.WithContext(ctx).Create(assignees).Error
+}
+
+func UpdatePullRequestAssignees(ctx context.Context, prNodeID string, assignees []*model.PullRequestAssignees) error {
+	if util.IsEmptySlice(assignees) {
+		return nil
+	}
+	var currentAssignees []*model.PullRequestAssignees
+	if err := DB.WithContext(ctx).Where("pull_request_node_id = ?", prNodeID).Find(&currentAssignees).Error; err != nil {
+		return err
+	}
+	more, less := util.CompareSlices(currentAssignees, assignees)
+	if err := DB.WithContext(ctx).Create(more).Error; err != nil {
+		return err
+	}
+	for _, e := range less {
+		if err := DB.WithContext(ctx).Where("id = ?", e.ID).Delete(&model.PullRequestAssignees{}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func DeletePullRequestAssigneesByPR(ctx context.Context, prNodeID string) error {
