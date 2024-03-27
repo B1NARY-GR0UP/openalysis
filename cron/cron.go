@@ -15,8 +15,10 @@ import (
 	"time"
 )
 
-// TODO: 记录每个小 task 的执行耗时
+// TODO: record execute time of each task
+// TODO: add progress bar
 // TODO: optimize error handling
+// TODO: use transaction
 
 func Start(ctx context.Context) {
 	errC := make(chan error)
@@ -450,7 +452,14 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 //       查询 prs table 中 state 为 OPEN 的 prs，查询后覆盖更新数据库，查询 assignees table 中的所有 prs，如果 graphql query
 //       后返回的 state 为 CLOSED 或 MERGED，则从 prs table 中删除，否则覆盖更新。
 
+// TODO: update pr assignees
+// TODO: 查看 assignees 表中是否存在记录，如果存在记录并且 graphql 查询的 assignees 不为空则覆盖更新 assignees
+// TODO: 如果存在记录但 graphql 查询的 assignees 为空则从 assignees 表中删除
+// TODO: 如果不存在记录，但是 graphql 查询的 assignees 不为空则新增记录
+// TODO: 如果不存在记录，但是 graphql 查询的 assignees 为空则不处理
+
 func UpdateRepoData(ctx context.Context, rd *RepoData) error {
+	// create repo in each update task due to time series graph
 	if err := storage.CreateRepository(ctx, &model.Repository{
 		Owner:            rd.Owner,
 		Name:             rd.Name,
@@ -473,6 +482,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}
 		switch exist {
 		case true:
+			// update issues in db
 			if err := storage.UpdateIssue(ctx, &model.Issue{
 				NodeID:        issue.ID,
 				State:         issue.State,
@@ -481,6 +491,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 				return err
 			}
 		case false:
+			// add new issues to db
 			if err := storage.CreateIssues(ctx, []*model.Issue{
 				{
 					NodeID:         issue.ID,
@@ -502,8 +513,10 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			return err
 		}
 		switch exist {
+		// old issues
 		case true:
 			switch githubv4.IssueState(issue.State) {
+			// after update the issue is still open
 			case githubv4.IssueStateOpen:
 				var assignees []*model.IssueAssignees
 				for _, assignee := range issue.Assignees.Nodes {
@@ -517,20 +530,26 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 					})
 				}
 				if util.IsEmptySlice(assignees) {
+					// remove from issue_assignees because no assignees
 					if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
 						return err
 					}
 				} else {
+					// update db if the assignees are changed
 					if err := storage.UpdateIssueAssignees(ctx, issue.ID, assignees); err != nil {
 						return err
 					}
 				}
+			// after update the issue is closed
 			case githubv4.IssueStateClosed:
+				// remove from issue_assignees because of closed issue
 				if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
 					return err
 				}
 			}
+		// new issues
 		case false:
+			// judge if issue has assignees
 			if !util.IsEmptySlice(issue.Assignees.Nodes) && githubv4.IssueState(issue.State) == githubv4.IssueStateOpen {
 				var issueAssignees []*model.IssueAssignees
 				for _, assignee := range issue.Assignees.Nodes {
@@ -543,6 +562,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 						AssigneeLogin:  assignee.Login,
 					})
 				}
+				// insert into issue_assignees
 				if err := storage.CreateIssueAssignees(ctx, issueAssignees); err != nil {
 					return err
 				}
@@ -550,15 +570,19 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}
 	}
 	// handle pr
-	openPRs, err := storage.QueryOPENPullRequests(ctx)
+	// update old pull requests in db
+	// only open pr need to update
+	openPRs, err := storage.QueryOPENPullRequests(ctx, rd.Repo.ID)
 	if err != nil {
 		return err
 	}
 	for _, openPR := range openPRs {
+		// get latest state of old open prs
 		pr, err := graphql.QuerySinglePR(ctx, openPR.NodeID)
 		if err != nil {
 			return err
 		}
+		// overlay update old open prs
 		if err := storage.UpdatePullRequest(ctx, &model.PullRequest{
 			NodeID:     pr.ID,
 			State:      pr.State,
@@ -567,12 +591,8 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}); err != nil {
 			return err
 		}
-		// TODO: update pr assignees
-		// TODO: 查看 assignees 表中是否存在记录，如果存在记录并且 graphql 查询的 assignees 不为空则覆盖更新 assignees
-		// TODO: 如果存在记录但 graphql 查询的 assignees 为空则从 assignees 表中删除
-		// TODO: 如果不存在记录，但是 graphql 查询的 assignees 不为空则新增记录
-		// TODO: 如果不存在记录，但是 graphql 查询的 assignees 为空则不处理
 		switch state := githubv4.PullRequestState(pr.State); state {
+		// still open
 		case githubv4.PullRequestStateOpen:
 			var assignees []*model.PullRequestAssignees
 			for _, assignee := range pr.Assignees.Nodes {
@@ -585,34 +605,42 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 					AssigneeLogin:       assignee.Login,
 				})
 			}
+			// judge if old pr has assignees (openPR.NodeID == pr.ID)
 			exist, err := storage.PullRequestAssigneesExist(ctx, pr.ID)
 			if err != nil {
 				return err
 			}
 			switch exist {
+			// old open pr has assignees
 			case true:
 				if !util.IsEmptySlice(assignees) {
+					// if latest pr still have assignees then overlay update
 					if err := storage.UpdatePullRequestAssignees(ctx, pr.ID, assignees); err != nil {
 						return err
 					}
 				} else {
+					// if latest pr does not have any assignees then remove from pull_request_assignees
 					if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
 						return err
 					}
 				}
+			// old open pr does not have assignees
 			case false:
 				if !util.IsEmptySlice(assignees) {
+					// latest open pr has assignees then insert into db
 					if err := storage.CreatePullRequestAssignees(ctx, assignees); err != nil {
 						return err
 					}
 				}
 			}
+		// old open pr is closed or merged
 		case githubv4.PullRequestStateMerged, githubv4.PullRequestStateClosed:
 			if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
 				return err
 			}
 		}
 	}
+	// handle new pull requests
 	var prs []*model.PullRequest
 	var prAssignees []*model.PullRequestAssignees
 	for _, pr := range rd.PRs {

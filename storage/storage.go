@@ -172,9 +172,9 @@ func DeletePullRequests(ctx context.Context, repoNodeID string) error {
 	return DB.WithContext(ctx).Where("repo_node_id = ?", repoNodeID).Delete(&model.PullRequest{}).Error
 }
 
-func QueryOPENPullRequests(ctx context.Context) ([]model.PullRequest, error) {
+func QueryOPENPullRequests(ctx context.Context, repoNodeID string) ([]model.PullRequest, error) {
 	var prs []model.PullRequest
-	err := DB.WithContext(ctx).Where("state = ?", "OPEN").Find(&prs).Error
+	err := DB.WithContext(ctx).Where("state = ? AND repo_node_id = ?", "OPEN", repoNodeID).Find(&prs).Error
 	return prs, err
 }
 
