@@ -83,7 +83,7 @@ func TestCreateRepo(t *testing.T) {
 func TestQueryContributorCountByOrg(t *testing.T) {
 	config.Init("../default.yaml")
 	Init()
-	count, err := QueryContributorCountByOrg(context.Background(), "MDEyOk9yZ2FuaXphdGlvbjc5MjM2NDUz")
+	count, err := QueryContributorCountByOrg(context.Background(), "O_kgDOCEYWXQ")
 	if err != nil {
 		panic(err.Error())
 	}

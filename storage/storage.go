@@ -282,9 +282,8 @@ func QueryContributorCountByOrg(ctx context.Context, orgNodeID string) (int, err
 	if err := DB.WithContext(ctx).
 		Table("contributors").
 		Select("COUNT(DISTINCT contributors.node_id) AS contributor_count").
-		Joins("JOIN repositories ON contributors.repo_node_id = repositories.node_id").
-		Joins("JOIN organizations ON repositories.owner_node_id = organizations.node_id").
-		Where("organizations.node_id = ?", orgNodeID).
+		Joins("INNER JOIN repositories ON contributors.repo_node_id = repositories.node_id").
+		Where("repositories.owner_node_id = ?", orgNodeID).
 		Scan(&contributorCount).Error; err != nil {
 		return 0, err
 	}
