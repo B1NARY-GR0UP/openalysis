@@ -41,7 +41,7 @@ func TestInitTask(t *testing.T) {
 	storage.Init()
 	graphql.Init()
 	rest.Init()
-	InitTask(context.Background()) // 7min 78s (467.58s)
+	InitTask(context.Background()) // over 8 min
 }
 
 func TestUpdateTask(t *testing.T) {

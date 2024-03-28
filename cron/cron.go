@@ -17,10 +17,34 @@ import (
 
 // TODO: record execute time of each task
 // TODO: add progress bar
-// TODO: optimize error handling
+// TODO: optimize error handling add retry strategy
+// TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
 // TODO: use transaction
 
+// TODO: 定时任务如果失败（有一个 error 就判定为失败），回退事务，整体重试，通过 chan 来传递和监听是否有 err
+
 func Start(ctx context.Context) {
+	errC := make(chan error)
+
+	InitTask(ctx)
+	c := cron.New()
+	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
+		UpdateTask(ctx)
+	}); err != nil {
+		slog.Error("error doing cron", "err", err)
+		errC <- err
+	}
+	c.Start()
+	defer c.Stop()
+
+	if err := util.WaitSignal(errC); err != nil {
+		slog.Error("receive close signal error", "signal", err.Error())
+		return
+	}
+	slog.Info("openalysis service stopped")
+}
+
+func Restart(ctx context.Context) {
 	errC := make(chan error)
 
 	c := cron.New()
@@ -48,7 +72,6 @@ type Count struct {
 	PullRequestCount int
 	StarCount        int
 	ForkCount        int
-	ContributorCount int
 }
 
 func InitTask(ctx context.Context) {
@@ -75,7 +98,6 @@ func InitTask(ctx context.Context) {
 			cache[login] = repos
 
 			// handle repos in org
-			// TODO: use errgroup to optimize performance
 			for _, nameWithOwner := range repos {
 				owner, name := util.SplitNameWithOwner(nameWithOwner)
 				rd := &RepoData{
@@ -96,10 +118,14 @@ func InitTask(ctx context.Context) {
 					orgCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
 					orgCount.StarCount += rd.Repo.Stargazers.TotalCount
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
-					orgCount.ContributorCount += rd.ContributorCount
 				}
 			}
 			// TODO: both success or failed
+			contributorCount, err := storage.QueryContributorCountByOrg(ctx, org.ID)
+			if err != nil {
+				slog.Error("error query contributor count by org", "err", err.Error())
+				continue
+			}
 			if err := storage.CreateOrganization(ctx, &model.Organization{
 				Login:            org.Login,
 				NodeID:           org.ID,
@@ -107,7 +133,7 @@ func InitTask(ctx context.Context) {
 				PullRequestCount: orgCount.PullRequestCount,
 				StarCount:        orgCount.StarCount,
 				ForkCount:        orgCount.ForkCount,
-				ContributorCount: orgCount.ContributorCount,
+				ContributorCount: contributorCount,
 			}); err != nil {
 				slog.Error("error create org", "err", err.Error())
 				continue
@@ -124,7 +150,6 @@ func InitTask(ctx context.Context) {
 				groupCount.PullRequestCount += orgCount.PullRequestCount
 				groupCount.StarCount += orgCount.StarCount
 				groupCount.ForkCount += orgCount.ForkCount
-				groupCount.ContributorCount += orgCount.ContributorCount
 			}
 		}
 		// handle repos in group
@@ -156,17 +181,20 @@ func InitTask(ctx context.Context) {
 				groupCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
 				groupCount.StarCount += rd.Repo.Stargazers.TotalCount
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
-				groupCount.ContributorCount += rd.ContributorCount
 			}
 		}
 		// TODO: insert groups first, then update counts
+		contributorCount, err := storage.QueryContributorCountByGroup(ctx, group.Name)
+		if err != nil {
+			slog.Error("error query contributor count by group", "err", err.Error())
+		}
 		if err := storage.CreateGroup(ctx, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupCount.IssueCount,
 			PullRequestCount: groupCount.PullRequestCount,
 			StarCount:        groupCount.StarCount,
 			ForkCount:        groupCount.ForkCount,
-			ContributorCount: groupCount.ContributorCount,
+			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error create group", "err", err.Error())
 			continue
@@ -225,8 +253,12 @@ func UpdateTask(ctx context.Context) {
 					orgCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
 					orgCount.StarCount += rd.Repo.Stargazers.TotalCount
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
-					orgCount.ContributorCount += rd.ContributorCount
 				}
+			}
+			contributorCount, err := storage.QueryContributorCountByOrg(ctx, org.ID)
+			if err != nil {
+				slog.Error("error query contributor count by org", "err", err.Error())
+				continue
 			}
 			if err := storage.UpdateOrganization(ctx, &model.Organization{
 				NodeID:           org.ID,
@@ -234,7 +266,7 @@ func UpdateTask(ctx context.Context) {
 				PullRequestCount: orgCount.PullRequestCount,
 				StarCount:        orgCount.StarCount,
 				ForkCount:        orgCount.ForkCount,
-				ContributorCount: orgCount.ContributorCount,
+				ContributorCount: contributorCount,
 			}); err != nil {
 				slog.Error("error update org", "err", err.Error())
 				continue
@@ -244,7 +276,6 @@ func UpdateTask(ctx context.Context) {
 				groupCount.PullRequestCount += orgCount.PullRequestCount
 				groupCount.StarCount += orgCount.StarCount
 				groupCount.ForkCount += orgCount.ForkCount
-				groupCount.ContributorCount += orgCount.ContributorCount
 			}
 		}
 		for _, nameWithOwner := range group.Repos {
@@ -272,8 +303,11 @@ func UpdateTask(ctx context.Context) {
 				groupCount.PullRequestCount += rd.Repo.PullRequests.TotalCount
 				groupCount.StarCount += rd.Repo.Stargazers.TotalCount
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
-				groupCount.ContributorCount += rd.ContributorCount
 			}
+		}
+		contributorCount, err := storage.QueryContributorCountByGroup(ctx, group.Name)
+		if err != nil {
+			slog.Error("error query contributor count by group", "err", err.Error())
 		}
 		if err := storage.UpdateGroup(ctx, &model.Group{
 			Name:             group.Name,
@@ -281,7 +315,7 @@ func UpdateTask(ctx context.Context) {
 			PullRequestCount: groupCount.PullRequestCount,
 			StarCount:        groupCount.StarCount,
 			ForkCount:        groupCount.ForkCount,
-			ContributorCount: groupCount.ContributorCount,
+			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error update group", "err", err.Error())
 			continue
@@ -658,7 +692,6 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			return err
 		}
 	}
-	// TODO: 这里更新时应该根据 repo_node_id 和 login 来查找不然可能会更新到其他 repo 的同一个 contributor
 	if err := storage.UpdateOrCreateContributors(ctx, rd.Contributors); err != nil {
 		return err
 	}

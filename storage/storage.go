@@ -277,10 +277,61 @@ func CreateContributors(ctx context.Context, cs []*model.Contributor) error {
 	return DB.WithContext(ctx).Create(cs).Error
 }
 
+func QueryContributorCountByOrg(ctx context.Context, orgNodeID string) (int, error) {
+	var contributorCount int
+	if err := DB.WithContext(ctx).
+		Table("contributors").
+		Select("COUNT(DISTINCT contributors.node_id) AS contributor_count").
+		Joins("JOIN repositories ON contributors.repo_node_id = repositories.node_id").
+		Joins("JOIN organizations ON repositories.owner_node_id = organizations.node_id").
+		Where("organizations.node_id = ?", orgNodeID).
+		Scan(&contributorCount).Error; err != nil {
+		return 0, err
+	}
+	return contributorCount, nil
+}
+
+func QueryContributorCountByGroup(ctx context.Context, groupName string) (int, error) {
+	var count int64
+
+	var repos1 []string
+	sq1 := DB.WithContext(ctx).
+		Table("groups_repositories").
+		Select("groups_repositories.repo_node_id").
+		Joins("INNER JOIN repositories ON groups_repositories.repo_node_id = repositories.node_id").
+		Where("groups_repositories.group_name = ?", groupName)
+	if err := sq1.Find(&repos1).Error; err != nil {
+		return 0, err
+	}
+
+	var repos2 []string
+	sq2 := DB.WithContext(ctx).
+		Table("repositories").
+		Select("repositories.node_id").
+		Joins("INNER JOIN groups_organizations ON repositories.owner_node_id = groups_organizations.org_node_id").
+		Where("groups_organizations.group_name = ?", groupName)
+	if err := sq2.Find(&repos2).Error; err != nil {
+		return 0, err
+	}
+
+	repoNodeIDs := append(repos1, repos2...)
+
+	if err := DB.WithContext(ctx).
+		Table("contributors").
+		Select("contributors.node_id").
+		Where("contributors.repo_node_id IN ?", repoNodeIDs).
+		Distinct().
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return int(count), nil
+}
+
 func UpdateOrCreateContributors(ctx context.Context, cs []*model.Contributor) error {
 	for _, contributor := range cs {
 		if err := DB.WithContext(ctx).Where(model.Contributor{
-			NodeID: contributor.NodeID,
+			NodeID:     contributor.NodeID,
+			RepoNodeID: contributor.RepoNodeID,
 		}).Assign(contributor).FirstOrCreate(contributor).Error; err != nil {
 			return err
 		}

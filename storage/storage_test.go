@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"context"
 	"fmt"
+	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -76,4 +78,24 @@ func TestCreateRepo(t *testing.T) {
 	//	fmt.Println(err)
 	//}
 	//fmt.Println(rows)
+}
+
+func TestQueryContributorCountByOrg(t *testing.T) {
+	config.Init("../default.yaml")
+	Init()
+	count, err := QueryContributorCountByOrg(context.Background(), "MDEyOk9yZ2FuaXphdGlvbjc5MjM2NDUz")
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println(count)
+}
+
+func TestQueryContributorCountByGroup(t *testing.T) {
+	config.Init("../default.yaml")
+	Init()
+	count, err := QueryContributorCountByGroup(context.Background(), "cloudwego")
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println(count)
 }
