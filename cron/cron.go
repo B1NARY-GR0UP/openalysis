@@ -22,6 +22,7 @@ import (
 // TODO: use transaction
 
 // TODO: 定时任务如果失败（有一个 error 就判定为失败），回退事务，整体重试，通过 chan 来传递和监听是否有 err
+// TODO: 使用事务可能需要把 global DB 变为参数传递
 
 func Start(ctx context.Context) {
 	errC := make(chan error)
