@@ -54,7 +54,7 @@ func GetContributorsByRepo(ctx context.Context, owner, name, repoNodeID string) 
 			Location:      user.Location,
 			AvatarURL:     c.GetAvatarURL(),
 			RepoNodeID:    repoNodeID,
-			Contributions: 0,
+			Contributions: c.GetContributions(),
 		})
 	}
 	return contributorData, len(contributorData), nil

@@ -335,17 +335,15 @@ func FetchRepoData(ctx context.Context, rd *RepoData, lu time.Time, ec string) e
 		}
 		return err
 	})
-	g.Go(func() error {
-		contributors, contributorCount, err := rest.GetContributorsByRepo(ctx, rd.Owner, rd.Name, rd.Repo.ID)
-		if err == nil {
-			rd.Contributors = contributors
-			rd.ContributorCount = contributorCount
-		}
-		return err
-	})
 	if err := g.Wait(); err != nil {
 		return err
 	}
+	contributors, contributorCount, err := rest.GetContributorsByRepo(ctx, rd.Owner, rd.Name, rd.Repo.ID)
+	if err != nil {
+		return err
+	}
+	rd.Contributors = contributors
+	rd.ContributorCount = contributorCount
 	return nil
 }
 
@@ -660,6 +658,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			return err
 		}
 	}
+	// TODO: 这里更新时应该根据 repo_node_id 和 login 来查找不然可能会更新到其他 repo 的同一个 contributor
 	if err := storage.UpdateOrCreateContributors(ctx, rd.Contributors); err != nil {
 		return err
 	}

@@ -20,6 +20,6 @@ func TestGetContributors(t *testing.T) {
 	}
 	fmt.Println(count)
 	for _, contributor := range res {
-		fmt.Println(contributor.Company)
+		fmt.Println(contributor.Contributions)
 	}
 }
