@@ -41,7 +41,7 @@ func TestInitTask(t *testing.T) {
 	storage.Init()
 	graphql.Init()
 	rest.Init()
-	InitTask(context.Background()) // over 8 min
+	InitTask(context.Background()) // around 9 min for cloudwego init
 }
 
 func TestUpdateTask(t *testing.T) {

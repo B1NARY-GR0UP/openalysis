@@ -687,6 +687,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	}
 	if !rd.LastUpdate.IsZero() || rd.EndCursor != "" {
 		if err := storage.UpdateCursor(ctx, &model.Cursor{
+			RepoNodeID: rd.Repo.ID,
 			LastUpdate: rd.LastUpdate,
 			EndCursor:  rd.EndCursor,
 		}); err != nil {
