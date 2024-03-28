@@ -41,7 +41,10 @@ func TestInitTask(t *testing.T) {
 	storage.Init()
 	graphql.Init()
 	rest.Init()
-	InitTask(context.Background()) // around 9 min for cloudwego init
+	err := InitTask(context.Background(), storage.DB) // around 9 min for cloudwego init
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestUpdateTask(t *testing.T) {
@@ -54,13 +57,16 @@ func TestUpdateTask(t *testing.T) {
 		for _, login := range group.Orgs {
 			repos, err := graphql.QueryRepoNameByOrg(context.Background(), login)
 			if err != nil {
-				panic("test panic")
+				t.Fatal(err)
 			}
 
 			cache[login] = repos
 		}
 	}
-	UpdateTask(context.Background())
+	err := UpdateTask(context.Background(), storage.DB)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestProgressBar(t *testing.T) {

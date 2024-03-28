@@ -11,26 +11,35 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/sync/errgroup"
+	"gorm.io/gorm"
 	"log/slog"
 	"time"
 )
 
 // TODO: record execute time of each task
 // TODO: add progress bar
-// TODO: optimize error handling add retry strategy
 // TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
-// TODO: use transaction
-
-// TODO: 定时任务如果失败（有一个 error 就判定为失败），回退事务，整体重试，通过 chan 来传递和监听是否有 err
-// TODO: 使用事务可能需要把 global DB 变为参数传递
 
 func Start(ctx context.Context) {
-	errC := make(chan error)
+	slog.Info("openalysis service started")
 
-	InitTask(ctx)
+	errC := make(chan error)
+	// if init failed, stop service
+	errC <- InitTask(ctx, storage.DB)
+
 	c := cron.New()
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
-		UpdateTask(ctx)
+		for {
+			tx := storage.DB.Begin()
+			err := UpdateTask(ctx, tx)
+			if err == nil {
+				tx.Commit()
+				break
+			}
+			slog.Error("error doing update task", "err", err.Error())
+			tx.Rollback()
+			slog.Info("transaction rollback and retry")
+		}
 	}); err != nil {
 		slog.Error("error doing cron", "err", err)
 		errC <- err
@@ -42,15 +51,28 @@ func Start(ctx context.Context) {
 		slog.Error("receive close signal error", "signal", err.Error())
 		return
 	}
+
 	slog.Info("openalysis service stopped")
 }
 
 func Restart(ctx context.Context) {
+	slog.Info("openalysis service restarted")
+
 	errC := make(chan error)
 
 	c := cron.New()
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
-		UpdateTask(ctx)
+		for {
+			tx := storage.DB.Begin()
+			err := UpdateTask(ctx, tx)
+			if err == nil {
+				tx.Commit()
+				break
+			}
+			slog.Error("error doing update task", "err", err.Error())
+			tx.Rollback()
+			slog.Info("transaction rollback and retry")
+		}
 	}); err != nil {
 		slog.Error("error doing cron", "err", err)
 		errC <- err
@@ -62,6 +84,7 @@ func Restart(ctx context.Context) {
 		slog.Error("receive close signal error", "signal", err.Error())
 		return
 	}
+
 	slog.Info("openalysis service stopped")
 }
 
@@ -75,7 +98,7 @@ type Count struct {
 	ForkCount        int
 }
 
-func InitTask(ctx context.Context) {
+func InitTask(ctx context.Context, db *gorm.DB) error {
 	// init cache
 	cache = make(map[string][]string)
 	// handle groups
@@ -88,12 +111,12 @@ func InitTask(ctx context.Context) {
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
 				slog.Error("error query org info", "err", err.Error())
-				continue
+				return err
 			}
 			repos, err := graphql.QueryRepoNameByOrg(ctx, login)
 			if err != nil {
 				slog.Error("error query repo name by org", "err", err.Error())
-				continue
+				return err
 			}
 
 			cache[login] = repos
@@ -108,11 +131,11 @@ func InitTask(ctx context.Context) {
 				}
 				if err := FetchRepoData(ctx, rd, time.Time{}, ""); err != nil {
 					slog.Error("error fetch repo data", "err", err.Error())
-					continue
+					return err
 				}
-				if err := CreateRepoData(ctx, rd); err != nil {
+				if err := CreateRepoData(ctx, db, rd); err != nil {
 					slog.Error("error create repo data", "err", err.Error())
-					continue
+					return err
 				}
 				{
 					orgCount.IssueCount += rd.Repo.Issues.TotalCount
@@ -121,13 +144,12 @@ func InitTask(ctx context.Context) {
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
 				}
 			}
-			// TODO: both success or failed
-			contributorCount, err := storage.QueryContributorCountByOrg(ctx, org.ID)
+			contributorCount, err := storage.QueryContributorCountByOrg(ctx, db, org.ID)
 			if err != nil {
 				slog.Error("error query contributor count by org", "err", err.Error())
-				continue
+				return err
 			}
-			if err := storage.CreateOrganization(ctx, &model.Organization{
+			if err := storage.CreateOrganization(ctx, db, &model.Organization{
 				Login:            org.Login,
 				NodeID:           org.ID,
 				IssueCount:       orgCount.IssueCount,
@@ -137,14 +159,14 @@ func InitTask(ctx context.Context) {
 				ContributorCount: contributorCount,
 			}); err != nil {
 				slog.Error("error create org", "err", err.Error())
-				continue
+				return err
 			}
-			if err := storage.CreateGroupsOrganizations(ctx, &model.GroupsOrganizations{
+			if err := storage.CreateGroupsOrganizations(ctx, db, &model.GroupsOrganizations{
 				GroupName: group.Name,
 				OrgNodeID: org.ID,
 			}); err != nil {
 				slog.Error("error create group org join", "err", err.Error())
-				continue
+				return err
 			}
 			{
 				groupCount.IssueCount += orgCount.IssueCount
@@ -163,19 +185,18 @@ func InitTask(ctx context.Context) {
 			}
 			if err := FetchRepoData(ctx, rd, time.Time{}, ""); err != nil {
 				slog.Error("error fetch repo data", "err", err.Error())
-				continue
+				return err
 			}
-			// TODO: both success or failed
-			if err := CreateRepoData(ctx, rd); err != nil {
+			if err := CreateRepoData(ctx, db, rd); err != nil {
 				slog.Error("error create repo data", "err", err.Error())
-				continue
+				return err
 			}
-			if err := storage.CreateGroupsRepositories(ctx, &model.GroupsRepositories{
+			if err := storage.CreateGroupsRepositories(ctx, db, &model.GroupsRepositories{
 				GroupName:  group.Name,
 				RepoNodeID: rd.Repo.ID,
 			}); err != nil {
 				slog.Error("error create group repo join", "err", err.Error())
-				continue
+				return err
 			}
 			{
 				groupCount.IssueCount += rd.Repo.Issues.TotalCount
@@ -184,12 +205,12 @@ func InitTask(ctx context.Context) {
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
 			}
 		}
-		// TODO: insert groups first, then update counts
-		contributorCount, err := storage.QueryContributorCountByGroup(ctx, group.Name)
+		contributorCount, err := storage.QueryContributorCountByGroup(ctx, db, group.Name)
 		if err != nil {
 			slog.Error("error query contributor count by group", "err", err.Error())
+			return err
 		}
-		if err := storage.CreateGroup(ctx, &model.Group{
+		if err := storage.CreateGroup(ctx, db, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupCount.IssueCount,
 			PullRequestCount: groupCount.PullRequestCount,
@@ -198,13 +219,13 @@ func InitTask(ctx context.Context) {
 			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error create group", "err", err.Error())
-			continue
+			return err
 		}
 	}
+	return nil
 }
 
-// UpdateTask TODO: fix bug
-func UpdateTask(ctx context.Context) {
+func UpdateTask(ctx context.Context, db *gorm.DB) error {
 	for _, group := range config.GlobalConfig.Groups {
 		var groupCount Count
 		for _, login := range group.Orgs {
@@ -212,18 +233,18 @@ func UpdateTask(ctx context.Context) {
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
 				slog.Error("error query org info", "err", err.Error())
-				continue
+				return err
 			}
 			repos, err := graphql.QueryRepoNameByOrg(ctx, login)
 			if err != nil {
 				slog.Error("error query repo name by org", "err", err.Error())
-				continue
+				return err
 			}
 
 			_, deleteNeeded := util.CompareSlices(cache[login], repos)
-			if err := DeleteRepos(ctx, deleteNeeded); err != nil {
+			if err := DeleteRepos(ctx, db, deleteNeeded); err != nil {
 				slog.Error("error delete repos", "err", err.Error())
-				continue
+				return err
 			}
 
 			// update cache
@@ -236,18 +257,18 @@ func UpdateTask(ctx context.Context) {
 					Name:          name,
 					NameWithOwner: nameWithOwner,
 				}
-				cursor, err := storage.QueryCursor(ctx, nameWithOwner)
+				cursor, err := storage.QueryCursor(ctx, db, nameWithOwner)
 				if err != nil {
 					slog.Error("error query cursor", "err", err.Error())
-					continue
+					return err
 				}
 				if err := FetchRepoData(ctx, rd, cursor.LastUpdate, cursor.EndCursor); err != nil {
 					slog.Error("error fetch repo data", "err", err.Error())
-					continue
+					return err
 				}
-				if err := UpdateRepoData(ctx, rd); err != nil {
+				if err := UpdateRepoData(ctx, db, rd); err != nil {
 					slog.Error("error update repo data", "err", err.Error())
-					continue
+					return err
 				}
 				{
 					orgCount.IssueCount += rd.Repo.Issues.TotalCount
@@ -256,12 +277,12 @@ func UpdateTask(ctx context.Context) {
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
 				}
 			}
-			contributorCount, err := storage.QueryContributorCountByOrg(ctx, org.ID)
+			contributorCount, err := storage.QueryContributorCountByOrg(ctx, db, org.ID)
 			if err != nil {
 				slog.Error("error query contributor count by org", "err", err.Error())
-				continue
+				return err
 			}
-			if err := storage.UpdateOrganization(ctx, &model.Organization{
+			if err := storage.UpdateOrganization(ctx, db, &model.Organization{
 				NodeID:           org.ID,
 				IssueCount:       orgCount.IssueCount,
 				PullRequestCount: orgCount.PullRequestCount,
@@ -270,7 +291,7 @@ func UpdateTask(ctx context.Context) {
 				ContributorCount: contributorCount,
 			}); err != nil {
 				slog.Error("error update org", "err", err.Error())
-				continue
+				return err
 			}
 			{
 				groupCount.IssueCount += orgCount.IssueCount
@@ -286,18 +307,18 @@ func UpdateTask(ctx context.Context) {
 				Name:          name,
 				NameWithOwner: nameWithOwner,
 			}
-			cursor, err := storage.QueryCursor(ctx, nameWithOwner)
+			cursor, err := storage.QueryCursor(ctx, db, nameWithOwner)
 			if err != nil {
 				slog.Error("error query cursor", "err", err.Error())
-				continue
+				return err
 			}
 			if err := FetchRepoData(ctx, rd, cursor.LastUpdate, cursor.EndCursor); err != nil {
 				slog.Error("error fetch repo data", "err", err.Error())
-				continue
+				return err
 			}
-			if err := UpdateRepoData(ctx, rd); err != nil {
+			if err := UpdateRepoData(ctx, db, rd); err != nil {
 				slog.Error("error update repo data", "err", err.Error())
-				continue
+				return err
 			}
 			{
 				groupCount.IssueCount += rd.Repo.Issues.TotalCount
@@ -306,11 +327,12 @@ func UpdateTask(ctx context.Context) {
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
 			}
 		}
-		contributorCount, err := storage.QueryContributorCountByGroup(ctx, group.Name)
+		contributorCount, err := storage.QueryContributorCountByGroup(ctx, db, group.Name)
 		if err != nil {
 			slog.Error("error query contributor count by group", "err", err.Error())
+			return err
 		}
-		if err := storage.UpdateGroup(ctx, &model.Group{
+		if err := storage.UpdateGroup(ctx, db, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupCount.IssueCount,
 			PullRequestCount: groupCount.PullRequestCount,
@@ -319,9 +341,10 @@ func UpdateTask(ctx context.Context) {
 			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error update group", "err", err.Error())
-			continue
+			return err
 		}
 	}
+	return nil
 }
 
 type RepoData struct {
@@ -382,8 +405,8 @@ func FetchRepoData(ctx context.Context, rd *RepoData, lu time.Time, ec string) e
 	return nil
 }
 
-func CreateRepoData(ctx context.Context, rd *RepoData) error {
-	if err := storage.CreateRepository(ctx, &model.Repository{
+func CreateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
+	if err := storage.CreateRepository(ctx, db, &model.Repository{
 		Owner:            rd.Owner,
 		Name:             rd.Name,
 		NodeID:           rd.Repo.ID,
@@ -422,10 +445,10 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			}
 		}
 	}
-	if err := storage.CreateIssues(ctx, issueData); err != nil {
+	if err := storage.CreateIssues(ctx, db, issueData); err != nil {
 		return err
 	}
-	if err := storage.CreateIssueAssignees(ctx, issueAssignees); err != nil {
+	if err := storage.CreateIssueAssignees(ctx, db, issueAssignees); err != nil {
 		return err
 	}
 	var prData []*model.PullRequest
@@ -455,13 +478,13 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 			}
 		}
 	}
-	if err := storage.CreatePullRequests(ctx, prData); err != nil {
+	if err := storage.CreatePullRequests(ctx, db, prData); err != nil {
 		return err
 	}
-	if err := storage.CreatePullRequestAssignees(ctx, prAssignees); err != nil {
+	if err := storage.CreatePullRequestAssignees(ctx, db, prAssignees); err != nil {
 		return err
 	}
-	if err := storage.CreateCursor(context.Background(), &model.Cursor{
+	if err := storage.CreateCursor(ctx, db, &model.Cursor{
 		RepoNodeID:        rd.Repo.ID,
 		RepoNameWithOwner: rd.NameWithOwner,
 		LastUpdate:        rd.LastUpdate,
@@ -469,15 +492,15 @@ func CreateRepoData(ctx context.Context, rd *RepoData) error {
 	}); err != nil {
 		return err
 	}
-	if err := storage.CreateContributors(ctx, rd.Contributors); err != nil {
+	if err := storage.CreateContributors(ctx, db, rd.Contributors); err != nil {
 		return err
 	}
 	return nil
 }
 
-func UpdateRepoData(ctx context.Context, rd *RepoData) error {
+func UpdateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 	// create repo in each update task due to time series graph
-	if err := storage.CreateRepository(ctx, &model.Repository{
+	if err := storage.CreateRepository(ctx, db, &model.Repository{
 		Owner:            rd.Owner,
 		Name:             rd.Name,
 		NodeID:           rd.Repo.ID,
@@ -493,14 +516,14 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	// handle issue
 	for _, issue := range rd.Issues {
 		// handle update in issues table
-		exist, err := storage.IssueExist(ctx, issue.ID)
+		exist, err := storage.IssueExist(ctx, db, issue.ID)
 		if err != nil {
 			return err
 		}
 		switch exist {
 		case true:
 			// overlay update issues in db
-			if err := storage.UpdateIssue(ctx, &model.Issue{
+			if err := storage.UpdateIssue(ctx, db, &model.Issue{
 				NodeID:        issue.ID,
 				State:         issue.State,
 				IssueClosedAt: issue.ClosedAt,
@@ -509,7 +532,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			}
 		case false:
 			// add new issues to db
-			if err := storage.CreateIssues(ctx, []*model.Issue{
+			if err := storage.CreateIssues(ctx, db, []*model.Issue{
 				{
 					NodeID:         issue.ID,
 					Author:         issue.Author.Login,
@@ -537,7 +560,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			})
 		}
 		// handle update in issue_assignees table
-		exist, err = storage.IssueAssigneesExist(ctx, issue.ID)
+		exist, err = storage.IssueAssigneesExist(ctx, db, issue.ID)
 		if err != nil {
 			return err
 		}
@@ -549,19 +572,19 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			case githubv4.IssueStateOpen:
 				if util.IsEmptySlice(assignees) {
 					// remove from issue_assignees because no assignees
-					if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
+					if err := storage.DeleteIssueAssigneesByIssue(ctx, db, issue.ID); err != nil {
 						return err
 					}
 				} else {
 					// update db if the assignees are changed
-					if err := storage.UpdateIssueAssignees(ctx, issue.ID, assignees); err != nil {
+					if err := storage.UpdateIssueAssignees(ctx, db, issue.ID, assignees); err != nil {
 						return err
 					}
 				}
 			// after update the issue is closed
 			case githubv4.IssueStateClosed:
 				// remove from issue_assignees because of closed issue
-				if err := storage.DeleteIssueAssigneesByIssue(ctx, issue.ID); err != nil {
+				if err := storage.DeleteIssueAssigneesByIssue(ctx, db, issue.ID); err != nil {
 					return err
 				}
 			}
@@ -570,7 +593,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			// judge if issue has assignees
 			if !util.IsEmptySlice(issue.Assignees.Nodes) && githubv4.IssueState(issue.State) == githubv4.IssueStateOpen {
 				// insert into issue_assignees
-				if err := storage.CreateIssueAssignees(ctx, assignees); err != nil {
+				if err := storage.CreateIssueAssignees(ctx, db, assignees); err != nil {
 					return err
 				}
 			}
@@ -579,7 +602,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 	// handle pr
 	// update old pull requests in db
 	// only open pr need to update
-	openPRs, err := storage.QueryOPENPullRequests(ctx, rd.Repo.ID)
+	openPRs, err := storage.QueryOPENPullRequests(ctx, db, rd.Repo.ID)
 	if err != nil {
 		return err
 	}
@@ -590,7 +613,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			return err
 		}
 		// overlay update old open prs
-		if err := storage.UpdatePullRequest(ctx, &model.PullRequest{
+		if err := storage.UpdatePullRequest(ctx, db, &model.PullRequest{
 			NodeID:     pr.ID,
 			State:      pr.State,
 			PRMergedAt: pr.MergedAt,
@@ -612,7 +635,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}
 		// judge if old pr has assignees
 		// NOTE: openPR.NodeID == pr.ID
-		exist, err := storage.PullRequestAssigneesExist(ctx, pr.ID)
+		exist, err := storage.PullRequestAssigneesExist(ctx, db, pr.ID)
 		if err != nil {
 			return err
 		}
@@ -624,18 +647,18 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			case githubv4.PullRequestStateOpen:
 				if !util.IsEmptySlice(assignees) {
 					// if latest pr still have assignees then overlay update
-					if err := storage.UpdatePullRequestAssignees(ctx, pr.ID, assignees); err != nil {
+					if err := storage.UpdatePullRequestAssignees(ctx, db, pr.ID, assignees); err != nil {
 						return err
 					}
 				} else {
 					// if latest pr does not have any assignees then remove from pull_request_assignees
-					if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
+					if err := storage.DeletePullRequestAssigneesByPR(ctx, db, pr.ID); err != nil {
 						return err
 					}
 				}
 			// old open pr is closed or merged
 			case githubv4.PullRequestStateMerged, githubv4.PullRequestStateClosed:
-				if err := storage.DeletePullRequestAssigneesByPR(ctx, pr.ID); err != nil {
+				if err := storage.DeletePullRequestAssigneesByPR(ctx, db, pr.ID); err != nil {
 					return err
 				}
 			}
@@ -643,7 +666,7 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		case false:
 			if !util.IsEmptySlice(assignees) && githubv4.PullRequestState(pr.State) == githubv4.PullRequestStateOpen {
 				// latest open pr has assignees then insert into db
-				if err := storage.CreatePullRequestAssignees(ctx, assignees); err != nil {
+				if err := storage.CreatePullRequestAssignees(ctx, db, assignees); err != nil {
 					return err
 				}
 			}
@@ -679,14 +702,14 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 		}
 	}
 	// handle update in pull_requests table
-	if err := storage.CreatePullRequests(ctx, prs); err != nil {
+	if err := storage.CreatePullRequests(ctx, db, prs); err != nil {
 		return err
 	}
-	if err := storage.CreatePullRequestAssignees(ctx, prAssignees); err != nil {
+	if err := storage.CreatePullRequestAssignees(ctx, db, prAssignees); err != nil {
 		return err
 	}
 	if !rd.LastUpdate.IsZero() || rd.EndCursor != "" {
-		if err := storage.UpdateCursor(ctx, &model.Cursor{
+		if err := storage.UpdateCursor(ctx, db, &model.Cursor{
 			RepoNodeID: rd.Repo.ID,
 			LastUpdate: rd.LastUpdate,
 			EndCursor:  rd.EndCursor,
@@ -694,38 +717,38 @@ func UpdateRepoData(ctx context.Context, rd *RepoData) error {
 			return err
 		}
 	}
-	if err := storage.UpdateOrCreateContributors(ctx, rd.Contributors); err != nil {
+	if err := storage.UpdateOrCreateContributors(ctx, db, rd.Contributors); err != nil {
 		return err
 	}
 	return nil
 }
 
-func DeleteRepos(ctx context.Context, repos []string) error {
+func DeleteRepos(ctx context.Context, db *gorm.DB, repos []string) error {
 	if util.IsEmptySlice(repos) {
 		return nil
 	}
 	for _, repo := range repos {
 		owner, name := util.SplitNameWithOwner(repo)
-		id, err := storage.QueryRepositoryNodeID(ctx, owner, name)
+		id, err := storage.QueryRepositoryNodeID(ctx, db, owner, name)
 		if err != nil {
 			return err
 		}
-		if err := storage.DeleteRepository(ctx, id); err != nil {
+		if err := storage.DeleteRepository(ctx, db, id); err != nil {
 			return err
 		}
-		if err := storage.DeleteIssues(ctx, id); err != nil {
+		if err := storage.DeleteIssues(ctx, db, id); err != nil {
 			return err
 		}
-		if err := storage.DeleteIssueAssigneesByRepo(ctx, repo); err != nil {
+		if err := storage.DeleteIssueAssigneesByRepo(ctx, db, repo); err != nil {
 			return err
 		}
-		if err := storage.DeletePullRequests(ctx, id); err != nil {
+		if err := storage.DeletePullRequests(ctx, db, id); err != nil {
 			return err
 		}
-		if err := storage.DeletePullRequestAssigneesByRepo(ctx, repo); err != nil {
+		if err := storage.DeletePullRequestAssigneesByRepo(ctx, db, repo); err != nil {
 			return err
 		}
-		if err := storage.DeleteCursor(ctx, id); err != nil {
+		if err := storage.DeleteCursor(ctx, db, id); err != nil {
 			return err
 		}
 	}
