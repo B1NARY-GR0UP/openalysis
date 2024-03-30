@@ -248,7 +248,29 @@ func UpdateIssueAssignees(ctx context.Context, db *gorm.DB, issueNodeID string, 
 	if err := db.WithContext(ctx).Where("issue_node_id = ?", issueNodeID).Find(&currentAssignees).Error; err != nil {
 		return err
 	}
-	more, less := util.CompareSlices(currentAssignees, assignees)
+	var s1 []model.IssueAssignees
+	var s2 []model.IssueAssignees
+	for _, assignee := range currentAssignees {
+		s1 = append(s1, model.IssueAssignees{
+			IssueNodeID:    assignee.IssueNodeID,
+			IssueNumber:    assignee.IssueNumber,
+			IssueURL:       assignee.IssueURL,
+			IssueRepoName:  assignee.IssueRepoName,
+			AssigneeNodeID: assignee.AssigneeNodeID,
+			AssigneeLogin:  assignee.AssigneeLogin,
+		})
+	}
+	for _, assignee := range assignees {
+		s2 = append(s2, model.IssueAssignees{
+			IssueNodeID:    assignee.IssueNodeID,
+			IssueNumber:    assignee.IssueNumber,
+			IssueURL:       assignee.IssueURL,
+			IssueRepoName:  assignee.IssueRepoName,
+			AssigneeNodeID: assignee.AssigneeNodeID,
+			AssigneeLogin:  assignee.AssigneeLogin,
+		})
+	}
+	more, less := util.CompareSlices(s1, s2)
 	if err := db.WithContext(ctx).Create(more).Error; err != nil {
 		return err
 	}
@@ -294,7 +316,29 @@ func UpdatePullRequestAssignees(ctx context.Context, db *gorm.DB, prNodeID strin
 	if err := db.WithContext(ctx).Where("pull_request_node_id = ?", prNodeID).Find(&currentAssignees).Error; err != nil {
 		return err
 	}
-	more, less := util.CompareSlices(currentAssignees, assignees)
+	var s1 []model.PullRequestAssignees
+	var s2 []model.PullRequestAssignees
+	for _, assignee := range currentAssignees {
+		s1 = append(s1, model.PullRequestAssignees{
+			PullRequestNodeID:   assignee.PullRequestNodeID,
+			PullRequestNumber:   assignee.PullRequestNumber,
+			PullRequestURL:      assignee.PullRequestURL,
+			PullRequestRepoName: assignee.PullRequestRepoName,
+			AssigneeNodeID:      assignee.AssigneeNodeID,
+			AssigneeLogin:       assignee.AssigneeLogin,
+		})
+	}
+	for _, assignee := range assignees {
+		s2 = append(s2, model.PullRequestAssignees{
+			PullRequestNodeID:   assignee.PullRequestNodeID,
+			PullRequestNumber:   assignee.PullRequestNumber,
+			PullRequestURL:      assignee.PullRequestURL,
+			PullRequestRepoName: assignee.PullRequestRepoName,
+			AssigneeNodeID:      assignee.AssigneeNodeID,
+			AssigneeLogin:       assignee.AssigneeLogin,
+		})
+	}
+	more, less := util.CompareSlices(s1, s2)
 	if err := db.WithContext(ctx).Create(more).Error; err != nil {
 		return err
 	}
