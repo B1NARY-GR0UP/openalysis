@@ -60,7 +60,29 @@ func UpdateGroup(ctx context.Context, db *gorm.DB, group *model.Group) error {
 	currentGroup.PullRequestCount = group.PullRequestCount
 	currentGroup.StarCount = group.StarCount
 	currentGroup.ForkCount = group.ForkCount
-	currentGroup.ContributorCount = group.ContributorCount
+	if err := db.WithContext(ctx).Save(&currentGroup).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func QueryAndUpdateGroupContributorCount(ctx context.Context, db *gorm.DB, groupName string) error {
+	count, err := QueryContributorCountByGroup(ctx, db, groupName)
+	if err != nil {
+		return err
+	}
+	if err := UpdateGroupContributorCount(ctx, db, groupName, count); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateGroupContributorCount(ctx context.Context, db *gorm.DB, groupName string, count int) error {
+	var currentGroup model.Group
+	if err := db.WithContext(ctx).Where("name = ?", groupName).First(&currentGroup).Error; err != nil {
+		return err
+	}
+	currentGroup.ContributorCount = count
 	if err := db.WithContext(ctx).Save(&currentGroup).Error; err != nil {
 		return err
 	}
@@ -80,7 +102,29 @@ func UpdateOrganization(ctx context.Context, db *gorm.DB, org *model.Organizatio
 	currentOrg.PullRequestCount = org.PullRequestCount
 	currentOrg.StarCount = org.StarCount
 	currentOrg.ForkCount = org.ForkCount
-	currentOrg.ContributorCount = org.ContributorCount
+	if err := db.WithContext(ctx).Save(&currentOrg).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func QueryAndUpdateOrgContributorCount(ctx context.Context, db *gorm.DB, orgNodeID string) error {
+	count, err := QueryContributorCountByOrg(ctx, db, orgNodeID)
+	if err != nil {
+		return err
+	}
+	if err := UpdateOrganizationContributorCount(ctx, db, orgNodeID, count); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateOrganizationContributorCount(ctx context.Context, db *gorm.DB, orgNodeID string, count int) error {
+	var currentOrg model.Organization
+	if err := db.WithContext(ctx).Where("node_id = ?", orgNodeID).First(&currentOrg).Error; err != nil {
+		return err
+	}
+	currentOrg.ContributorCount = count
 	if err := db.WithContext(ctx).Save(&currentOrg).Error; err != nil {
 		return err
 	}

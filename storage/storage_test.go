@@ -83,7 +83,7 @@ func TestCreateRepo(t *testing.T) {
 func TestQueryContributorCountByOrg(t *testing.T) {
 	config.Init("../default.yaml")
 	Init()
-	count, err := QueryContributorCountByOrg(context.Background(), "O_kgDOCEYWXQ")
+	count, err := QueryContributorCountByOrg(context.Background(), DB, "O_kgDOCEYWXQ")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -93,7 +93,7 @@ func TestQueryContributorCountByOrg(t *testing.T) {
 func TestQueryContributorCountByGroup(t *testing.T) {
 	config.Init("../default.yaml")
 	Init()
-	count, err := QueryContributorCountByGroup(context.Background(), "cloudwego")
+	count, err := QueryContributorCountByGroup(context.Background(), DB, "cloudwego")
 	if err != nil {
 		panic(err.Error())
 	}

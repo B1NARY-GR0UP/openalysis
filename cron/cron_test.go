@@ -34,12 +34,15 @@ func TestUpdateTask(t *testing.T) {
 	cache = make(map[string][]string)
 	for _, group := range config.GlobalConfig.Groups {
 		for _, login := range group.Orgs {
+			org, err := graphql.QueryOrgInfo(context.Background(), login)
+			if err != nil {
+				t.Fatal(err)
+			}
 			repos, err := graphql.QueryRepoNameByOrg(context.Background(), login)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			cache[login] = repos
+			cache[org.ID] = repos
 		}
 	}
 	err := UpdateTask(context.Background(), storage.DB)

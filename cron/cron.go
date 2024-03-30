@@ -19,10 +19,10 @@ import (
 // TODO: record execute time of each task
 // TODO: add progress bar
 // TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
+// TODO: add retry count option
 
 // TODO: fix bug pr assignees deleted
-// TODO: fix bug contributor logic
-// TODO: fix bug counting logic 计算数量时应该只计算最新的，不应该计算旧的
+// TODO: fix bug counting logic 计算数量时应该只计算最新的，不应该计算旧的，并且应该等事务提交后再进行查询，否则查询不到数据
 
 func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
@@ -38,6 +38,17 @@ func Start(ctx context.Context) {
 			err := UpdateTask(ctx, tx)
 			if err == nil {
 				tx.Commit()
+				for {
+					stx := storage.DB.Begin()
+					err := UpdateContributorCount(ctx, stx)
+					if err == nil {
+						stx.Commit()
+						break
+					}
+					slog.Error("error update contributor count", "err", err.Error())
+					stx.Rollback()
+					slog.Info("transaction rollback and retry")
+				}
 				break
 			}
 			slog.Error("error doing update task", "err", err.Error())
@@ -71,6 +82,17 @@ func Restart(ctx context.Context) {
 			err := UpdateTask(ctx, tx)
 			if err == nil {
 				tx.Commit()
+				for {
+					stx := storage.DB.Begin()
+					err := UpdateContributorCount(ctx, stx)
+					if err == nil {
+						stx.Commit()
+						break
+					}
+					slog.Error("error update contributor count", "err", err.Error())
+					stx.Rollback()
+					slog.Info("transaction rollback and retry")
+				}
 				break
 			}
 			slog.Error("error doing update task", "err", err.Error())
@@ -92,7 +114,7 @@ func Restart(ctx context.Context) {
 	slog.Info("openalysis service stopped")
 }
 
-// map[orgLogin][]repoNameWithOwner
+// map[orgNodeID][]repoNameWithOwner
 var cache map[string][]string
 
 type Count struct {
@@ -123,7 +145,7 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 				return err
 			}
 
-			cache[login] = repos
+			cache[org.ID] = repos
 
 			// handle repos in org
 			for _, nameWithOwner := range repos {
@@ -245,14 +267,14 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 				return err
 			}
 
-			_, deleteNeeded := util.CompareSlices(cache[login], repos)
+			_, deleteNeeded := util.CompareSlices(cache[org.ID], repos)
 			if err := DeleteRepos(ctx, db, deleteNeeded); err != nil {
 				slog.Error("error delete repos", "err", err.Error())
 				return err
 			}
 
 			// update cache
-			cache[login] = repos
+			cache[org.ID] = repos
 
 			for _, nameWithOwner := range repos {
 				owner, name := util.SplitNameWithOwner(nameWithOwner)
@@ -281,18 +303,13 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
 				}
 			}
-			contributorCount, err := storage.QueryContributorCountByOrg(ctx, db, org.ID)
-			if err != nil {
-				slog.Error("error query contributor count by org", "err", err.Error())
-				return err
-			}
+			// NOTE: contributor count is update individually
 			if err := storage.UpdateOrganization(ctx, db, &model.Organization{
 				NodeID:           org.ID,
 				IssueCount:       orgCount.IssueCount,
 				PullRequestCount: orgCount.PullRequestCount,
 				StarCount:        orgCount.StarCount,
 				ForkCount:        orgCount.ForkCount,
-				ContributorCount: contributorCount,
 			}); err != nil {
 				slog.Error("error update org", "err", err.Error())
 				return err
@@ -331,18 +348,13 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
 			}
 		}
-		contributorCount, err := storage.QueryContributorCountByGroup(ctx, db, group.Name)
-		if err != nil {
-			slog.Error("error query contributor count by group", "err", err.Error())
-			return err
-		}
+		// NOTE: contributor count is update individually
 		if err := storage.UpdateGroup(ctx, db, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupCount.IssueCount,
 			PullRequestCount: groupCount.PullRequestCount,
 			StarCount:        groupCount.StarCount,
 			ForkCount:        groupCount.ForkCount,
-			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error update group", "err", err.Error())
 			return err
@@ -753,6 +765,20 @@ func DeleteRepos(ctx context.Context, db *gorm.DB, repos []string) error {
 			return err
 		}
 		if err := storage.DeleteCursor(ctx, db, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func UpdateContributorCount(ctx context.Context, db *gorm.DB) error {
+	for orgNodeID := range cache {
+		if err := storage.QueryAndUpdateOrgContributorCount(ctx, db, orgNodeID); err != nil {
+			return err
+		}
+	}
+	for _, group := range config.GlobalConfig.Groups {
+		if err := storage.QueryAndUpdateGroupContributorCount(ctx, db, group.Name); err != nil {
 			return err
 		}
 	}
