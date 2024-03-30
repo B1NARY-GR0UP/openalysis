@@ -11,6 +11,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"gorm.io/gorm"
 	"log"
+	"log/slog"
 	"testing"
 	"time"
 )
@@ -48,6 +49,49 @@ func TestUpdateTask(t *testing.T) {
 	}
 	err := UpdateTask(context.Background(), storage.DB)
 	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRestart(t *testing.T) {
+	config.Init("../default.yaml")
+	storage.Init()
+	graphql.Init()
+	rest.Init()
+
+	cache = make(map[string][]string)
+	for _, group := range config.GlobalConfig.Groups {
+		for _, login := range group.Orgs {
+			org, err := graphql.QueryOrgInfo(context.Background(), login)
+			if err != nil {
+				t.Fatal(err)
+			}
+			repos, err := graphql.QueryRepoNameByOrg(context.Background(), login)
+			if err != nil {
+				t.Fatal(err)
+			}
+			cache[org.ID] = repos
+		}
+	}
+
+	tx := storage.DB.Begin()
+	err := UpdateTask(context.Background(), tx)
+	if err == nil {
+		tx.Commit()
+		slog.Info("tx commit")
+		stx := storage.DB.Begin()
+		err := UpdateContributorCount(context.Background(), stx)
+		if err == nil {
+			stx.Commit()
+			slog.Info("stx commit")
+		} else {
+			stx.Rollback()
+			slog.Info("stx rollback")
+			t.Fatal(err)
+		}
+	} else {
+		tx.Rollback()
+		slog.Info("tx rollback")
 		t.Fatal(err)
 	}
 }
