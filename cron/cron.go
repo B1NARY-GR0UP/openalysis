@@ -20,6 +20,10 @@ import (
 // TODO: add progress bar
 // TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
 
+// TODO: fix bug pr assignees deleted
+// TODO: fix bug contributor logic
+// TODO: fix bug counting logic 计算数量时应该只计算最新的，不应该计算旧的
+
 func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
 
@@ -360,7 +364,7 @@ type RepoData struct {
 	ContributorCount int
 }
 
-func FetchRepoData(ctx context.Context, rd *RepoData, lu time.Time, ec string) error {
+func FetchRepoData(ctx context.Context, rd *RepoData, issueCursor time.Time, prCursor string) error {
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		repo, err := graphql.QueryRepoInfo(ctx, rd.Owner, rd.Name)
@@ -370,11 +374,11 @@ func FetchRepoData(ctx context.Context, rd *RepoData, lu time.Time, ec string) e
 		return err
 	})
 	g.Go(func() error {
-		t := time.Time{}
-		if !lu.IsZero() {
-			t = lu
+		cursor := time.Time{}
+		if !issueCursor.IsZero() {
+			cursor = issueCursor
 		}
-		issues, lastUpdate, err := graphql.QueryIssueInfoByRepo(ctx, rd.Owner, rd.Name, t)
+		issues, lastUpdate, err := graphql.QueryIssueInfoByRepo(ctx, rd.Owner, rd.Name, cursor)
 		if err == nil {
 			rd.Issues = issues
 			rd.LastUpdate = lastUpdate
@@ -382,11 +386,11 @@ func FetchRepoData(ctx context.Context, rd *RepoData, lu time.Time, ec string) e
 		return err
 	})
 	g.Go(func() error {
-		c := ""
-		if ec != "" {
-			c = ec
+		cursor := ""
+		if prCursor != "" {
+			cursor = prCursor
 		}
-		prs, endCursor, err := graphql.QueryPRInfoByRepo(ctx, rd.Owner, rd.Name, c)
+		prs, endCursor, err := graphql.QueryPRInfoByRepo(ctx, rd.Owner, rd.Name, cursor)
 		if err == nil {
 			rd.PRs = prs
 			rd.EndCursor = endCursor

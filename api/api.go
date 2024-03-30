@@ -1,19 +1,24 @@
 package api
 
 import (
-	"fmt"
+	"context"
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
+	"github.com/B1NARY-GR0UP/openalysis/cron"
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 )
 
-// TODO: main 应该只负责 oa 的初始化以及使用，不负责数据库初始化，配置文件读取等
-// TODO: 配置文件读取，数据库读取，开始服务器等都应该在 api 层提供
+// TODO: AddGroups SetDataSource SetBackend SetCron SetToken
 
-func Start(path string) {
+func Start(ctx context.Context, path string) {
 	Init(path)
-	// TODO
+	cron.Start(ctx)
+}
+
+func Restart(ctx context.Context, path string) {
+	Init(path)
+	cron.Restart(ctx)
 }
 
 func Init(path string) {
@@ -22,8 +27,4 @@ func Init(path string) {
 	// NOTE: graphql client MUST initialize before rest client due to dependency
 	graphql.Init()
 	rest.Init()
-}
-
-func AddGroups(groups ...config.Group) {
-	fmt.Println(groups)
 }
