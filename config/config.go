@@ -33,6 +33,7 @@ type MySQL struct {
 type Backend struct {
 	Cron  string `yaml:"cron"`
 	Token string `yaml:"token"`
+	Retry int    `yaml:"retry"`
 }
 
 func (cfg *Config) ReadInConfig(path string) error {

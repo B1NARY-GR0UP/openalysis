@@ -99,3 +99,23 @@ func TestQueryContributorCountByGroup(t *testing.T) {
 	}
 	fmt.Println(count)
 }
+
+func TestFor(t *testing.T) {
+	var sli []model.Group
+	for _, group := range sli {
+		fmt.Println("group: ", group)
+	}
+}
+
+func TestCreate(t *testing.T) {
+	config.Init("../default.yaml")
+	Init()
+	err := DB.Create([]model.Group{
+		{
+			Name: "test",
+		},
+	}).Error
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+}

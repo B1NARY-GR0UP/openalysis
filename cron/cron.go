@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"errors"
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
@@ -21,8 +22,7 @@ import (
 // TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
 // TODO: add retry count option
 
-// TODO: fix bug pr assignees deleted
-// TODO: fix bug counting logic 计算数量时应该只计算最新的，不应该计算旧的，并且应该等事务提交后再进行查询，否则查询不到数据
+var ErrReachedRetryTimes = errors.New("error reached retry times")
 
 func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
@@ -33,12 +33,20 @@ func Start(ctx context.Context) {
 
 	c := cron.New()
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
+		i := 0
 		for {
+			if i == config.GlobalConfig.Backend.Retry {
+				errC <- ErrReachedRetryTimes
+			}
 			tx := storage.DB.Begin()
 			err := UpdateTask(ctx, tx)
 			if err == nil {
 				tx.Commit()
+				j := 0
 				for {
+					if j == config.GlobalConfig.Backend.Retry {
+						errC <- ErrReachedRetryTimes
+					}
 					stx := storage.DB.Begin()
 					err := UpdateContributorCount(ctx, stx)
 					if err == nil {
@@ -48,12 +56,14 @@ func Start(ctx context.Context) {
 					slog.Error("error update contributor count", "err", err.Error())
 					stx.Rollback()
 					slog.Info("transaction rollback and retry")
+					j++
 				}
 				break
 			}
 			slog.Error("error doing update task", "err", err.Error())
 			tx.Rollback()
 			slog.Info("transaction rollback and retry")
+			i++
 		}
 	}); err != nil {
 		slog.Error("error doing cron", "err", err)
@@ -77,12 +87,20 @@ func Restart(ctx context.Context) {
 
 	c := cron.New()
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
+		i := 0
 		for {
+			if i == config.GlobalConfig.Backend.Retry {
+				errC <- ErrReachedRetryTimes
+			}
 			tx := storage.DB.Begin()
 			err := UpdateTask(ctx, tx)
 			if err == nil {
 				tx.Commit()
+				j := 0
 				for {
+					if j == config.GlobalConfig.Backend.Retry {
+						errC <- ErrReachedRetryTimes
+					}
 					stx := storage.DB.Begin()
 					err := UpdateContributorCount(ctx, stx)
 					if err == nil {
@@ -92,12 +110,14 @@ func Restart(ctx context.Context) {
 					slog.Error("error update contributor count", "err", err.Error())
 					stx.Rollback()
 					slog.Info("transaction rollback and retry")
+					j++
 				}
 				break
 			}
 			slog.Error("error doing update task", "err", err.Error())
 			tx.Rollback()
 			slog.Info("transaction rollback and retry")
+			i++
 		}
 	}); err != nil {
 		slog.Error("error doing cron", "err", err)

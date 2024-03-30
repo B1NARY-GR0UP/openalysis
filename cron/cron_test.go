@@ -31,6 +31,7 @@ func TestUpdateTask(t *testing.T) {
 	storage.Init()
 	graphql.Init()
 	rest.Init()
+
 	cache = make(map[string][]string)
 	for _, group := range config.GlobalConfig.Groups {
 		for _, login := range group.Orgs {

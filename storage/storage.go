@@ -271,8 +271,10 @@ func UpdateIssueAssignees(ctx context.Context, db *gorm.DB, issueNodeID string, 
 		})
 	}
 	more, less := util.CompareSlices(s1, s2)
-	if err := db.WithContext(ctx).Create(more).Error; err != nil {
-		return err
+	if !util.IsEmptySlice(more) {
+		if err := db.WithContext(ctx).Create(more).Error; err != nil {
+			return err
+		}
 	}
 	for _, e := range less {
 		if err := db.WithContext(ctx).Where("id = ?", e.ID).Delete(&model.IssueAssignees{}).Error; err != nil {
@@ -339,8 +341,10 @@ func UpdatePullRequestAssignees(ctx context.Context, db *gorm.DB, prNodeID strin
 		})
 	}
 	more, less := util.CompareSlices(s1, s2)
-	if err := db.WithContext(ctx).Create(more).Error; err != nil {
-		return err
+	if !util.IsEmptySlice(more) {
+		if err := db.WithContext(ctx).Create(more).Error; err != nil {
+			return err
+		}
 	}
 	for _, e := range less {
 		if err := db.WithContext(ctx).Where("id = ?", e.ID).Delete(&model.PullRequestAssignees{}).Error; err != nil {

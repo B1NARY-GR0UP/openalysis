@@ -9,7 +9,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 )
 
-// TODO: AddGroups SetDataSource SetBackend SetCron SetToken
+// TODO: AddGroups SetDataSource SetBackend SetCron SetToken SetRetry
 
 func Start(ctx context.Context, path string) {
 	Init(path)
