@@ -63,7 +63,7 @@ func WaitSignal(errC chan error) error {
 			return errors.New(sig.String())
 		case syscall.SIGHUP, syscall.SIGINT:
 			// graceful shutdown
-			slog.Info("receive signal: ", "signal", sig.String())
+			slog.Info("receive signal", "signal", sig.String())
 			return nil
 		}
 	case err := <-errC:

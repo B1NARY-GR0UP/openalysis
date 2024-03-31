@@ -40,7 +40,9 @@ var ErrReachedRetryTimes = errors.New("error reached retry times")
 func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
 
-	errC := make(chan error)
+	// 1. init task error
+	// 2. cron add func error
+	errC := make(chan error, 2)
 
 	slog.Info("init task starts now")
 	startInit := time.Now()
@@ -49,8 +51,9 @@ func Start(ctx context.Context) {
 	if err := InitTask(ctx, tx); err != nil {
 		tx.Rollback()
 		errC <- err
+	} else {
+		tx.Commit()
 	}
-	tx.Commit()
 	slog.Info("init task completed", "time", time.Since(startInit).String())
 
 	c := cron.New()
@@ -58,8 +61,7 @@ func Start(ctx context.Context) {
 	defer c.Stop()
 
 	if err := util.WaitSignal(errC); err != nil {
-		slog.Error("receive close signal error", "signal", err.Error())
-		return
+		slog.Error("receive error signal", "err", err.Error())
 	}
 
 	slog.Info("openalysis service stopped")
@@ -68,15 +70,15 @@ func Start(ctx context.Context) {
 func Restart(ctx context.Context) {
 	slog.Info("openalysis service restarted")
 
-	errC := make(chan error)
+	// 1. cron add func error
+	errC := make(chan error, 1)
 
 	c := cron.New()
 	StartCron(ctx, c, errC)
 	defer c.Stop()
 
 	if err := util.WaitSignal(errC); err != nil {
-		slog.Error("receive close signal error", "signal", err.Error())
-		return
+		slog.Error("receive error signal", "err", err.Error())
 	}
 
 	slog.Info("openalysis service stopped")
@@ -120,7 +122,7 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 		}
 		slog.Info("update task completed", "time", time.Since(startUpdate).String())
 	}); err != nil {
-		slog.Error("error doing cron", "err", err)
+		slog.Error("error add cron func", "err", err)
 		errC <- err
 	}
 	c.Start()
