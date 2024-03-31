@@ -1,14 +1,17 @@
 groups:
   # cloudwego family
-  - name: "cloudwego"
+#  - name: "cloudwego"
+#    orgs:
+#      - "cloudwego"
+#      - "kitex-contrib"
+#      - "hertz-contrib"
+#      - "volo-rs"
+#    repos:
+#      - "bytedance/sonic"
+#      - "bytedance/monoio"
+  - name: "rainiring"
     orgs:
-      - "cloudwego"
-      - "kitex-contrib"
-      - "hertz-contrib"
-      - "volo-rs"
-    repos:
-      - "bytedance/sonic"
-      - "bytedance/monoio"
+      - "rainiring"
 datasource:
   mysql:
     host: "localhost"

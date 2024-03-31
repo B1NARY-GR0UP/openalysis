@@ -51,7 +51,7 @@ func Start(ctx context.Context) {
 		errC <- err
 	}
 	tx.Commit()
-	slog.Info("init task execution time: ", time.Since(startInit))
+	slog.Info("init task completed", "time", time.Since(startInit).String())
 
 	StartCron(ctx, errC)
 
@@ -115,7 +115,7 @@ func StartCron(ctx context.Context, errC chan error) {
 			slog.Info("transaction rollback and retry")
 			i++
 		}
-		slog.Info("update task execution time: ", time.Since(startUpdate))
+		slog.Info("update task completed", "time", time.Since(startUpdate).String())
 	}); err != nil {
 		slog.Error("error doing cron", "err", err)
 		errC <- err
