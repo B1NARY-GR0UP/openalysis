@@ -32,10 +32,17 @@ func Restart(ctx context.Context) {
 	cron.Restart(ctx)
 }
 
-func Init(path string) error {
-	if err := config.Init(path); err != nil {
+func ReadInConfig(path string) error {
+	if path == "" {
+		path = "./default.yaml"
+	}
+	if err := config.GlobalConfig.ReadInConfig(path); err != nil {
 		return err
 	}
+	return nil
+}
+
+func Init() error {
 	if err := storage.Init(); err != nil {
 		return err
 	}

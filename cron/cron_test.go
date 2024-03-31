@@ -32,7 +32,7 @@ import (
 )
 
 func TestInitTask(t *testing.T) {
-	config.Init("../default.yaml")
+	config.GlobalConfig.ReadInConfig("../default.yaml")
 	storage.Init()
 	graphql.Init()
 	rest.Init()
@@ -43,7 +43,7 @@ func TestInitTask(t *testing.T) {
 }
 
 func TestUpdateTask(t *testing.T) {
-	config.Init("../default.yaml")
+	config.GlobalConfig.ReadInConfig("../default.yaml")
 	storage.Init()
 	graphql.Init()
 	rest.Init()
@@ -69,7 +69,7 @@ func TestUpdateTask(t *testing.T) {
 }
 
 func TestRestart(t *testing.T) {
-	config.Init("../default.yaml")
+	config.GlobalConfig.ReadInConfig("../default.yaml")
 	storage.Init()
 	graphql.Init()
 	rest.Init()
@@ -124,7 +124,7 @@ func TestProgressBar(t *testing.T) {
 }
 
 func TestTransaction(t *testing.T) {
-	config.Init("../default.yaml")
+	config.GlobalConfig.ReadInConfig("../default.yaml")
 	storage.Init()
 	graphql.Init()
 	rest.Init()

@@ -24,7 +24,7 @@ import (
 )
 
 func TestQueryContributorCountByOrg(t *testing.T) {
-	config.Init("../default.yaml")
+	config.GlobalConfig.ReadInConfig("../default.yaml")
 	Init()
 	count, err := QueryContributorCountByOrg(context.Background(), DB, "O_kgDOCEYWXQ")
 	if err != nil {
@@ -34,7 +34,7 @@ func TestQueryContributorCountByOrg(t *testing.T) {
 }
 
 func TestQueryContributorCountByGroup(t *testing.T) {
-	config.Init("../default.yaml")
+	config.GlobalConfig.ReadInConfig("../default.yaml")
 	Init()
 	count, err := QueryContributorCountByGroup(context.Background(), DB, "cloudwego")
 	if err != nil {
@@ -51,7 +51,7 @@ func TestFor(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	err := config.Init("../default.yaml")
+	err := config.GlobalConfig.ReadInConfig("../default.yaml")
 	if err != nil {
 		t.Fatal(err.Error())
 	}

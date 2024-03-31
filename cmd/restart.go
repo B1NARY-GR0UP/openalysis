@@ -16,10 +16,8 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/B1NARY-GR0UP/openalysis/api"
-	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +34,7 @@ e.g. oa restart -c "cron-spec" path2config.yaml`,
 		if !util.IsEmptySlice(args) {
 			configPath = args[0]
 		}
-		if err := api.Init(configPath); err != nil {
+		if err := api.ReadInConfig(configPath); err != nil {
 			cobra.CheckErr(err)
 		}
 		if TokenF != "" {
@@ -48,7 +46,9 @@ e.g. oa restart -c "cron-spec" path2config.yaml`,
 		if RetryF != -1 {
 			api.SetRetry(RetryF)
 		}
-		fmt.Println(config.GlobalConfig)
+		if err := api.Init(); err != nil {
+			cobra.CheckErr(err)
+		}
 		api.Restart(context.Background())
 	},
 }

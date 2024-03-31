@@ -60,13 +60,3 @@ func (cfg *Config) ReadInConfig(path string) error {
 	}
 	return nil
 }
-
-func Init(path string) error {
-	if path == "" {
-		path = "./default.yaml"
-	}
-	if err := GlobalConfig.ReadInConfig(path); err != nil {
-		return err
-	}
-	return nil
-}
