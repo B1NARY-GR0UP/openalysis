@@ -108,11 +108,17 @@ func TestFor(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	config.Init("../default.yaml")
-	Init()
-	err := DB.Create([]model.Group{
+	err := config.Init("../default.yaml")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = Init()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = DB.Create([]model.Group{
 		{
-			Name: "test",
+			Name: "init",
 		},
 	}).Error
 	if err != nil {

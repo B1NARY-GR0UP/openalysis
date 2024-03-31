@@ -40,8 +40,8 @@ var (
 
 var (
 	defaultTokenF = ""
-	defaultCronF  = "@daily"
-	defaultRetry  = 3
+	defaultCronF  = ""
+	defaultRetry  = -1
 )
 
 func setupCommand(cmd *cobra.Command) {

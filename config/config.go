@@ -47,11 +47,12 @@ func (cfg *Config) ReadInConfig(path string) error {
 	return nil
 }
 
-func Init(path string) {
+func Init(path string) error {
 	if path == "" {
 		path = "./default.yaml"
 	}
 	if err := GlobalConfig.ReadInConfig(path); err != nil {
-		panic("failed to init configuration")
+		return err
 	}
+	return nil
 }

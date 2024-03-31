@@ -12,8 +12,7 @@ import (
 
 var DB *gorm.DB
 
-func Init() {
-	var err error
+func Init() (err error) {
 	dsn := util.AssembleDSN(
 		config.GlobalConfig.DataSource.MySQL.Host,
 		config.GlobalConfig.DataSource.MySQL.Port,
@@ -25,7 +24,7 @@ func Init() {
 		PrepareStmt: true,
 	})
 	if err != nil {
-		panic("failed to connect database")
+		return
 	}
 
 	// TODO: use mount
@@ -43,8 +42,9 @@ func Init() {
 		&model.PullRequestAssignees{},
 	)
 	if err != nil {
-		panic("failed to migrate tables")
+		return
 	}
+	return
 }
 
 func CreateGroup(ctx context.Context, db *gorm.DB, group *model.Group) error {

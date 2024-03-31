@@ -9,22 +9,25 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 )
 
-func Start(ctx context.Context, path string) {
-	Init(path)
+func Start(ctx context.Context) {
 	cron.Start(ctx)
 }
 
-func Restart(ctx context.Context, path string) {
-	Init(path)
+func Restart(ctx context.Context) {
 	cron.Restart(ctx)
 }
 
-func Init(path string) {
-	config.Init(path)
-	storage.Init()
+func Init(path string) error {
+	if err := config.Init(path); err != nil {
+		return err
+	}
+	if err := storage.Init(); err != nil {
+		return err
+	}
 	// NOTE: graphql client MUST initialize before rest client due to dependency
 	graphql.Init()
 	rest.Init()
+	return nil
 }
 
 func AddGroups(groups ...config.Group) {
