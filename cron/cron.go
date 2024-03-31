@@ -41,10 +41,16 @@ func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
 
 	errC := make(chan error)
+
 	slog.Info("init task starts now")
 	startInit := time.Now()
+	tx := storage.DB.Begin()
 	// if init failed, stop service
-	errC <- InitTask(ctx, storage.DB)
+	if err := InitTask(ctx, tx); err != nil {
+		tx.Rollback()
+		errC <- err
+	}
+	tx.Commit()
 	slog.Info("init task execution time: ", time.Since(startInit))
 
 	StartCron(ctx, errC)
