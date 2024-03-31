@@ -17,6 +17,9 @@ package cron
 import (
 	"context"
 	"errors"
+	"log/slog"
+	"time"
+
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
@@ -27,8 +30,6 @@ import (
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
-	"log/slog"
-	"time"
 )
 
 // TODO: record execute time of each task

@@ -17,10 +17,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+
 	"github.com/B1NARY-GR0UP/openalysis/api"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/util"
-
 	"github.com/spf13/cobra"
 )
 

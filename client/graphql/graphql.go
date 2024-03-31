@@ -16,10 +16,11 @@ package graphql
 
 import (
 	"context"
+	"time"
+
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
-	"time"
 )
 
 var GlobalV4Client *githubv4.Client

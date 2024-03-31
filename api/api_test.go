@@ -15,8 +15,9 @@
 package api
 
 import (
-	"github.com/B1NARY-GR0UP/openalysis/config"
 	"testing"
+
+	"github.com/B1NARY-GR0UP/openalysis/config"
 )
 
 func TestAPI(t *testing.T) {

@@ -17,9 +17,10 @@ package graphql
 import (
 	"context"
 	"fmt"
-	"github.com/B1NARY-GR0UP/openalysis/config"
 	"testing"
 	"time"
+
+	"github.com/B1NARY-GR0UP/openalysis/config"
 )
 
 func TestQueryRepoInfo(t *testing.T) {
@@ -135,18 +136,6 @@ func TestQueryUserInfo(t *testing.T) {
 		fmt.Println(err)
 	}
 	fmt.Println(res)
-}
-
-func TestFor(t *testing.T) {
-	for i := range 5 {
-		if i == 2 {
-			continue
-		}
-		fmt.Println(i)
-	}
-	sli := make([]int, 3)
-	sli = append(sli, 1, 2)
-	fmt.Println(sli) // [0 0 0 1 2]
 }
 
 func TestTime(t *testing.T) {

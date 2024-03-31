@@ -17,9 +17,10 @@ package rest
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/config"
-	"testing"
 )
 
 func TestGetContributors(t *testing.T) {

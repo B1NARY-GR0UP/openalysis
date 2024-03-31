@@ -17,6 +17,11 @@ package cron
 import (
 	"context"
 	"errors"
+	"log"
+	"log/slog"
+	"testing"
+	"time"
+
 	"github.com/B1NARY-GR0UP/openalysis/client/graphql"
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
@@ -24,10 +29,6 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/schollz/progressbar/v3"
 	"gorm.io/gorm"
-	"log"
-	"log/slog"
-	"testing"
-	"time"
 )
 
 func TestInitTask(t *testing.T) {
@@ -112,10 +113,10 @@ func TestRestart(t *testing.T) {
 
 func TestProgressBar(t *testing.T) {
 	barOut := progressbar.Default(10, "OUT FOR")
-	for _ = range 10 {
+	for range 10 {
 		_ = barOut.Add(1)
 		barIn := progressbar.Default(10, "IN FOR")
-		for _ = range 10 {
+		for range 10 {
 			_ = barIn.Add(1)
 			time.Sleep(time.Second * 1)
 		}
