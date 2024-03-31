@@ -32,7 +32,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: record execute time of each task
 // TODO: add progress bar
 // TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
 
@@ -42,8 +41,10 @@ func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
 
 	errC := make(chan error)
+	startInit := time.Now()
 	// if init failed, stop service
 	errC <- InitTask(ctx, storage.DB)
+	slog.Info("init task execution time: ", time.Since(startInit))
 
 	StartCron(ctx, errC)
 
@@ -74,6 +75,7 @@ func StartCron(ctx context.Context, errC chan error) {
 	c := cron.New()
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
 		i := 0
+		startUpdate := time.Now()
 		for {
 			if i == config.GlobalConfig.Backend.Retry {
 				errC <- ErrReachedRetryTimes
@@ -105,6 +107,7 @@ func StartCron(ctx context.Context, errC chan error) {
 			slog.Info("transaction rollback and retry")
 			i++
 		}
+		slog.Info("update task execution time: ", time.Since(startUpdate))
 	}); err != nil {
 		slog.Error("error doing cron", "err", err)
 		errC <- err
