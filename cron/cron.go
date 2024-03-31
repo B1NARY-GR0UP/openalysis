@@ -41,6 +41,7 @@ func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
 
 	errC := make(chan error)
+	slog.Info("init task starts now")
 	startInit := time.Now()
 	// if init failed, stop service
 	errC <- InitTask(ctx, storage.DB)
@@ -74,8 +75,9 @@ func Restart(ctx context.Context) {
 func StartCron(ctx context.Context, errC chan error) {
 	c := cron.New()
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
-		i := 0
+		slog.Info("update task starts now")
 		startUpdate := time.Now()
+		i := 0
 		for {
 			if i == config.GlobalConfig.Backend.Retry {
 				errC <- ErrReachedRetryTimes
