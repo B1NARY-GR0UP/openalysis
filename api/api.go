@@ -9,8 +9,6 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 )
 
-// TODO: AddGroups SetDataSource SetBackend SetCron SetToken SetRetry
-
 func Start(ctx context.Context, path string) {
 	Init(path)
 	cron.Start(ctx)
@@ -27,4 +25,28 @@ func Init(path string) {
 	// NOTE: graphql client MUST initialize before rest client due to dependency
 	graphql.Init()
 	rest.Init()
+}
+
+func AddGroups(groups ...config.Group) {
+	config.GlobalConfig.Groups = append(config.GlobalConfig.Groups, groups...)
+}
+
+func SetDataSource(ds config.DataSource) {
+	config.GlobalConfig.DataSource = ds
+}
+
+func SetBackend(be config.Backend) {
+	config.GlobalConfig.Backend = be
+}
+
+func SetCron(spec string) {
+	config.GlobalConfig.Backend.Cron = spec
+}
+
+func SetToken(token string) {
+	config.GlobalConfig.Backend.Token = token
+}
+
+func SetRetry(times int) {
+	config.GlobalConfig.Backend.Retry = times
 }
