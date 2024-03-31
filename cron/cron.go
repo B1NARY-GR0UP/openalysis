@@ -53,7 +53,9 @@ func Start(ctx context.Context) {
 	tx.Commit()
 	slog.Info("init task completed", "time", time.Since(startInit).String())
 
-	StartCron(ctx, errC)
+	c := cron.New()
+	StartCron(ctx, c, errC)
+	defer c.Stop()
 
 	if err := util.WaitSignal(errC); err != nil {
 		slog.Error("receive close signal error", "signal", err.Error())
@@ -68,7 +70,9 @@ func Restart(ctx context.Context) {
 
 	errC := make(chan error)
 
-	StartCron(ctx, errC)
+	c := cron.New()
+	StartCron(ctx, c, errC)
+	defer c.Stop()
 
 	if err := util.WaitSignal(errC); err != nil {
 		slog.Error("receive close signal error", "signal", err.Error())
@@ -78,8 +82,7 @@ func Restart(ctx context.Context) {
 	slog.Info("openalysis service stopped")
 }
 
-func StartCron(ctx context.Context, errC chan error) {
-	c := cron.New()
+func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
 		slog.Info("update task starts now")
 		startUpdate := time.Now()
@@ -121,7 +124,6 @@ func StartCron(ctx context.Context, errC chan error) {
 		errC <- err
 	}
 	c.Start()
-	defer c.Stop()
 }
 
 // map[orgNodeID][]repoNameWithOwner
