@@ -73,6 +73,8 @@ func Restart(ctx context.Context) {
 	// 1. cron add func error
 	errC := make(chan error, 1)
 
+	// TODO: cache preheating
+
 	c := cron.New()
 	StartCron(ctx, c, errC)
 	defer c.Stop()
@@ -96,6 +98,7 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 			tx := storage.DB.Begin()
 			err := UpdateTask(ctx, tx)
 			if err == nil {
+				// TODO: merge to one transaction
 				tx.Commit()
 				j := 0
 				for {
