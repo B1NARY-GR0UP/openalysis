@@ -383,6 +383,12 @@ func CreateContributors(ctx context.Context, db *gorm.DB, cs []*model.Contributo
 	return db.WithContext(ctx).Create(cs).Error
 }
 
+// QueryContributorCountByOrg
+//
+// SELECT COUNT(DISTINCT c.node_id) AS contributor_count
+// FROM contributors c
+// INNER JOIN repositories r ON c.repo_node_id = r.node_id
+// WHERE r.owner_node_id = 'orgNodeID';
 func QueryContributorCountByOrg(ctx context.Context, db *gorm.DB, orgNodeID string) (int, error) {
 	var contributorCount int
 	if err := db.WithContext(ctx).
@@ -396,6 +402,23 @@ func QueryContributorCountByOrg(ctx context.Context, db *gorm.DB, orgNodeID stri
 	return contributorCount, nil
 }
 
+// QueryContributorCountByGroup
+//
+// SELECT COUNT(DISTINCT c.node_id) AS contributor_count
+// FROM contributors c
+// INNER JOIN (
+//
+//	SELECT DISTINCT gr.repo_node_id
+//	FROM groups_repositories gr
+//	INNER JOIN repositories r ON gr.repo_node_id = r.node_id
+//	WHERE gr.group_name = 'groupName'
+//	UNION
+//	SELECT DISTINCT r.node_id
+//	FROM repositories r
+//	INNER JOIN groups_organizations go ON r.owner_node_id = go.org_node_id
+//	WHERE go.group_name = 'groupName'
+//
+// ) AS repos ON c.repo_node_id = repos.repo_node_id;
 func QueryContributorCountByGroup(ctx context.Context, db *gorm.DB, groupName string) (int, error) {
 	var count int64
 
