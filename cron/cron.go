@@ -99,10 +99,10 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 			if i == config.GlobalConfig.Backend.Retry {
 				errC <- ErrReachedRetryTimes
 			}
+			// TODO: optimize transaction handling
 			tx := storage.DB.Begin()
 			err := UpdateTask(ctx, tx)
 			if err == nil {
-				// TODO: merge to one transaction
 				tx.Commit()
 				j := 0
 				for {
