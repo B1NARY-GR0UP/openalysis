@@ -752,14 +752,13 @@ func UpdateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 	if err := storage.CreatePullRequestAssignees(ctx, db, prAssignees); err != nil {
 		return err
 	}
-	if !rd.LastUpdate.IsZero() || rd.EndCursor != "" {
-		if err := storage.UpdateCursor(ctx, db, &model.Cursor{
-			RepoNodeID: rd.Repo.ID,
-			LastUpdate: rd.LastUpdate,
-			EndCursor:  rd.EndCursor,
-		}); err != nil {
-			return err
-		}
+	if err := storage.UpdateOrCreateCursor(ctx, db, &model.Cursor{
+		RepoNodeID:        rd.Repo.ID,
+		RepoNameWithOwner: rd.NameWithOwner,
+		LastUpdate:        rd.LastUpdate,
+		EndCursor:         rd.EndCursor,
+	}); err != nil {
+		return err
 	}
 	if err := storage.UpdateOrCreateContributors(ctx, db, rd.Contributors); err != nil {
 		return err

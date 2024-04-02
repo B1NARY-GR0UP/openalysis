@@ -481,11 +481,23 @@ func QueryCursor(ctx context.Context, db *gorm.DB, repo string) (*model.Cursor, 
 	return cursor, err
 }
 
-func UpdateCursor(ctx context.Context, db *gorm.DB, cursor *model.Cursor) error {
+func UpdateOrCreateCursor(ctx context.Context, db *gorm.DB, cursor *model.Cursor) error {
 	var currentCursor model.Cursor
 	if err := db.WithContext(ctx).Where("repo_node_id = ?", cursor.RepoNodeID).First(&currentCursor).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := db.WithContext(ctx).Create(&model.Cursor{
+				RepoNodeID:        cursor.RepoNodeID,
+				RepoNameWithOwner: cursor.RepoNameWithOwner,
+				LastUpdate:        cursor.LastUpdate,
+				EndCursor:         cursor.EndCursor,
+			}).Error; err != nil {
+				return err
+			}
+			return nil
+		}
 		return err
 	}
+	currentCursor.RepoNameWithOwner = cursor.RepoNameWithOwner
 	currentCursor.LastUpdate = cursor.LastUpdate
 	currentCursor.EndCursor = cursor.EndCursor
 	if err := db.WithContext(ctx).Save(&currentCursor).Error; err != nil {

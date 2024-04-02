@@ -68,3 +68,21 @@ func TestCreate(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 }
+
+func TestQueryCursor(t *testing.T) {
+	err := config.GlobalConfig.ReadInConfig("../default.yaml")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = Init()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	cursor, err := QueryCursor(context.Background(), DB, "cloudwego/iasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(cursor)
+	fmt.Println(cursor.EndCursor == "")
+	fmt.Println(cursor.LastUpdate.IsZero())
+}
