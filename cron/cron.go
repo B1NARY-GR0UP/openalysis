@@ -53,8 +53,8 @@ func Start(ctx context.Context) {
 		errC <- err
 	} else {
 		tx.Commit()
+		slog.Info("init task completed", "time", time.Since(startInit).String())
 	}
-	slog.Info("init task completed", "time", time.Since(startInit).String())
 
 	c := cron.New()
 	StartCron(ctx, c, errC)
@@ -70,10 +70,14 @@ func Start(ctx context.Context) {
 func Restart(ctx context.Context) {
 	slog.Info("openalysis service restarted")
 
-	// 1. cron add func error
-	errC := make(chan error, 1)
+	// 1. cache preheat
+	// 2. cron add func error
+	errC := make(chan error, 2)
 
-	// TODO: cache preheating
+	// if cache preheat failed, stop service
+	if err := CachePreheat(ctx, storage.DB); err != nil {
+		errC <- err
+	}
 
 	c := cron.New()
 	StartCron(ctx, c, errC)
@@ -132,7 +136,16 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 }
 
 // map[orgNodeID][]repoNameWithOwner
-var cache map[string][]string
+var cache = make(map[string][]string)
+
+func CachePreheat(ctx context.Context, db *gorm.DB) error {
+	orgRepos, err := storage.QueryOrgRepos(ctx, db)
+	if err != nil {
+		return err
+	}
+	cache = orgRepos
+	return nil
+}
 
 type Count struct {
 	IssueCount       int
@@ -142,8 +155,6 @@ type Count struct {
 }
 
 func InitTask(ctx context.Context, db *gorm.DB) error {
-	// init cache
-	cache = make(map[string][]string)
 	// handle groups
 	for _, group := range config.GlobalConfig.Groups {
 		var groupCount Count

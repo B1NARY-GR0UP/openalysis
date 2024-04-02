@@ -19,6 +19,15 @@ import (
 	"testing"
 )
 
+func TestNameWithOwner(t *testing.T) {
+	nameWithOwner := "cloudwego/hertz"
+	owner, name := SplitNameWithOwner(nameWithOwner)
+	fmt.Println("owner:", owner)
+	fmt.Println("name:", name)
+	res := MergeNameWithOwner(owner, name)
+	fmt.Println("res:", res)
+}
+
 func TestIsEmptySlice(t *testing.T) {
 	sli1 := make([]int, 0)
 	var sli2 []int

@@ -497,3 +497,24 @@ func UpdateCursor(ctx context.Context, db *gorm.DB, cursor *model.Cursor) error 
 func DeleteCursor(ctx context.Context, db *gorm.DB, repoNodeID string) error {
 	return db.WithContext(ctx).Where("repo_node_id = ?", repoNodeID).Delete(&model.Cursor{}).Error
 }
+
+func QueryOrgRepos(ctx context.Context, db *gorm.DB) (map[string][]string, error) {
+	var groupsOrgs []model.GroupsOrganizations
+	if err := db.WithContext(ctx).Find(&groupsOrgs).Error; err != nil {
+		return nil, err
+	}
+
+	orgRepos := make(map[string][]string)
+	for _, groupOrg := range groupsOrgs {
+		var repos []model.Repository
+		if err := db.WithContext(ctx).Where("owner_node_id = ?", groupOrg.OrgNodeID).Group("node_id").Find(&repos).Error; err != nil {
+			return nil, err
+		}
+
+		for _, repo := range repos {
+			orgRepos[groupOrg.OrgNodeID] = append(orgRepos[groupOrg.OrgNodeID], util.MergeNameWithOwner(repo.Owner, repo.Name))
+		}
+	}
+
+	return orgRepos, nil
+}

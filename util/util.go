@@ -16,6 +16,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -31,6 +32,10 @@ func SplitNameWithOwner(s string) (string, string) {
 		return "", ""
 	}
 	return parts[0], parts[1]
+}
+
+func MergeNameWithOwner(owner, name string) string {
+	return fmt.Sprintf("%s/%s", owner, name)
 }
 
 func AssembleDSN(host, port, user, password, database string) string {
