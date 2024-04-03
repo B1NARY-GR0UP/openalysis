@@ -98,8 +98,6 @@ func Restart(ctx context.Context) {
 	slog.Info("openalysis service stopped")
 }
 
-const SavePointUpdateTask = "UpdateTask"
-
 func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
 		slog.Info("update task starts now")
@@ -110,24 +108,7 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 			tx := storage.DB.Begin()
 			err := UpdateTask(ctx, tx)
 			if err == nil {
-				tx.SavePoint(SavePointUpdateTask)
-				j := 0
-				for {
-					j++
-					err := UpdateContributorCount(ctx, tx)
-					if err == nil {
-						tx.Commit()
-						break
-					}
-					slog.Error("error update contributor count", "err", err.Error())
-					tx.RollbackTo(SavePointUpdateTask)
-					if j == config.GlobalConfig.Backend.Retry {
-						tx.Rollback()
-						errC <- ErrReachedRetryTimes
-						break
-					}
-					slog.Info("transaction rollback and retry")
-				}
+				tx.Commit()
 				break
 			}
 			slog.Error("error doing update task", "err", err.Error())
@@ -291,6 +272,7 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 }
 
 func UpdateTask(ctx context.Context, db *gorm.DB) error {
+	// TODO: handle new org and new repo, join table need update
 	for _, group := range config.GlobalConfig.Groups {
 		var groupCount Count
 		for _, login := range group.Orgs {
@@ -342,13 +324,17 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
 				}
 			}
-			// NOTE: contributor count is update individually
+			contributorCount, err := storage.QueryContributorCountByOrg(ctx, db, org.ID)
+			if err != nil {
+				return err
+			}
 			if err := storage.UpdateOrganization(ctx, db, &model.Organization{
 				NodeID:           org.ID,
 				IssueCount:       orgCount.IssueCount,
 				PullRequestCount: orgCount.PullRequestCount,
 				StarCount:        orgCount.StarCount,
 				ForkCount:        orgCount.ForkCount,
+				ContributorCount: contributorCount,
 			}); err != nil {
 				slog.Error("error update org", "err", err.Error())
 				return err
@@ -387,13 +373,17 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
 			}
 		}
-		// NOTE: contributor count is update individually
+		contributorCount, err := storage.QueryContributorCountByGroup(ctx, db, group.Name)
+		if err != nil {
+			return err
+		}
 		if err := storage.UpdateGroup(ctx, db, &model.Group{
 			Name:             group.Name,
 			IssueCount:       groupCount.IssueCount,
 			PullRequestCount: groupCount.PullRequestCount,
 			StarCount:        groupCount.StarCount,
 			ForkCount:        groupCount.ForkCount,
+			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error update group", "err", err.Error())
 			return err
@@ -803,20 +793,6 @@ func DeleteRepos(ctx context.Context, db *gorm.DB, repos []string) error {
 			return err
 		}
 		if err := storage.DeleteCursor(ctx, db, id); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func UpdateContributorCount(ctx context.Context, db *gorm.DB) error {
-	for orgNodeID := range cache {
-		if err := storage.QueryAndUpdateOrgContributorCount(ctx, db, orgNodeID); err != nil {
-			return err
-		}
-	}
-	for _, group := range config.GlobalConfig.Groups {
-		if err := storage.QueryAndUpdateGroupContributorCount(ctx, db, group.Name); err != nil {
 			return err
 		}
 	}

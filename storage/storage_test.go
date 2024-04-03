@@ -117,3 +117,26 @@ func TestTx(t *testing.T) {
 	}
 	tx.Commit()
 }
+
+func TestUpdateOrganization(t *testing.T) {
+	err := config.GlobalConfig.ReadInConfig("../default.yaml")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = Init()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	org := &model.Organization{
+		NodeID:           "O_kgDOBke6GA",
+		IssueCount:       97,
+		PullRequestCount: 366,
+		StarCount:        292,
+		ForkCount:        194,
+		ContributorCount: 58,
+	}
+	err = UpdateOrganization(context.Background(), DB, org)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

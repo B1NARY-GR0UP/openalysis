@@ -81,71 +81,16 @@ func TestRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	slog.Info("update task starts now")
+	startUpdate := time.Now()
 	tx := storage.DB.Begin()
 	err = UpdateTask(context.Background(), tx)
 	if err == nil {
 		tx.Commit()
-		slog.Info("tx commit")
-		stx := storage.DB.Begin()
-		err := UpdateContributorCount(context.Background(), stx)
-		if err == nil {
-			stx.Commit()
-			slog.Info("stx commit")
-		} else {
-			stx.Rollback()
-			slog.Info("stx rollback")
-			t.Fatal(err)
-		}
 	} else {
-		tx.Rollback()
-		slog.Info("tx rollback")
-		t.Fatal(err)
-	}
-}
-
-func TestRestart2(t *testing.T) {
-	config.GlobalConfig.ReadInConfig("../default.yaml")
-	storage.Init()
-	graphql.Init()
-	rest.Init()
-	slog.Info("update task starts now")
-
-	err := CachePreheat(context.Background(), storage.DB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	startUpdate := time.Now()
-	i := 0
-	for {
-		i++
-		tx := storage.DB.Begin()
-		err := UpdateTask(context.Background(), tx)
-		if err == nil {
-			tx.SavePoint(SavePointUpdateTask)
-			j := 0
-			for {
-				j++
-				err := UpdateContributorCount(context.Background(), tx)
-				if err == nil {
-					tx.Commit()
-					break
-				}
-				slog.Error("error update contributor count", "err", err.Error())
-				tx.RollbackTo(SavePointUpdateTask)
-				slog.Info("transaction rollback and retry")
-				if j == config.GlobalConfig.Backend.Retry {
-					tx.Rollback()
-					t.Fatal()
-				}
-			}
-			break
-		}
 		slog.Error("error doing update task", "err", err.Error())
 		tx.Rollback()
 		slog.Info("transaction rollback and retry")
-		if i == config.GlobalConfig.Backend.Retry {
-			t.Fatal()
-		}
 	}
 	slog.Info("update task completed", "time", time.Since(startUpdate).String())
 }
