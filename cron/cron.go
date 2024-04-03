@@ -113,22 +113,22 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 					}
 					slog.Error("error update contributor count", "err", err.Error())
 					tx.RollbackTo(SavePointName)
-					slog.Info("transaction rollback and retry")
 					if j == config.GlobalConfig.Backend.Retry {
 						tx.Rollback()
 						errC <- ErrReachedRetryTimes
 						break
 					}
+					slog.Info("transaction rollback and retry")
 				}
 				break
 			}
 			slog.Error("error doing update task", "err", err.Error())
 			tx.Rollback()
-			slog.Info("transaction rollback and retry")
 			if i == config.GlobalConfig.Backend.Retry {
 				errC <- ErrReachedRetryTimes
 				break
 			}
+			slog.Info("transaction rollback and retry")
 		}
 		slog.Info("update task completed", "time", time.Since(startUpdate).String())
 	}); err != nil {
