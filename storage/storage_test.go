@@ -86,3 +86,34 @@ func TestQueryCursor(t *testing.T) {
 	fmt.Println(cursor.EndCursor == "")
 	fmt.Println(cursor.LastUpdate.IsZero())
 }
+
+func TestTx(t *testing.T) {
+	err := config.GlobalConfig.ReadInConfig("../default.yaml")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = Init()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	tx := DB.Begin()
+	err = CreateGroup(context.Background(), tx, &model.Group{
+		Name:             "hello",
+		IssueCount:       2,
+		PullRequestCount: 3,
+		StarCount:        4,
+		ForkCount:        5,
+		ContributorCount: 6,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var gs []model.Group
+	if err := tx.Find(&gs).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, g := range gs {
+		fmt.Println(g)
+	}
+	tx.Commit()
+}

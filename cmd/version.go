@@ -14,6 +14,8 @@
 
 package cmd
 
+// TODO: analysis grafana json tmpl, generate common tmpl for other users
+
 const (
 	Name    = "openalysis"
 	CMD     = "oa"

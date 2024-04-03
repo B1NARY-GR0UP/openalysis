@@ -90,42 +90,45 @@ func Restart(ctx context.Context) {
 	slog.Info("openalysis service stopped")
 }
 
+const SavePointName = "UpdateTask"
+
 func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
 		slog.Info("update task starts now")
 		startUpdate := time.Now()
 		i := 0
 		for {
-			if i == config.GlobalConfig.Backend.Retry {
-				errC <- ErrReachedRetryTimes
-			}
-			// TODO: optimize transaction handling
+			i++
 			tx := storage.DB.Begin()
 			err := UpdateTask(ctx, tx)
 			if err == nil {
-				tx.Commit()
+				tx.SavePoint(SavePointName)
 				j := 0
 				for {
-					if j == config.GlobalConfig.Backend.Retry {
-						errC <- ErrReachedRetryTimes
-					}
-					stx := storage.DB.Begin()
-					err := UpdateContributorCount(ctx, stx)
+					j++
+					err := UpdateContributorCount(ctx, tx)
 					if err == nil {
-						stx.Commit()
+						tx.Commit()
 						break
 					}
 					slog.Error("error update contributor count", "err", err.Error())
-					stx.Rollback()
+					tx.RollbackTo(SavePointName)
 					slog.Info("transaction rollback and retry")
-					j++
+					if j == config.GlobalConfig.Backend.Retry {
+						tx.Rollback()
+						errC <- ErrReachedRetryTimes
+						break
+					}
 				}
 				break
 			}
 			slog.Error("error doing update task", "err", err.Error())
 			tx.Rollback()
 			slog.Info("transaction rollback and retry")
-			i++
+			if i == config.GlobalConfig.Backend.Retry {
+				errC <- ErrReachedRetryTimes
+				break
+			}
 		}
 		slog.Info("update task completed", "time", time.Since(startUpdate).String())
 	}); err != nil {
