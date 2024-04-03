@@ -90,7 +90,7 @@ func Restart(ctx context.Context) {
 	slog.Info("openalysis service stopped")
 }
 
-const SavePointName = "UpdateTask"
+const SavePointUpdateTask = "UpdateTask"
 
 func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
@@ -102,7 +102,7 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 			tx := storage.DB.Begin()
 			err := UpdateTask(ctx, tx)
 			if err == nil {
-				tx.SavePoint(SavePointName)
+				tx.SavePoint(SavePointUpdateTask)
 				j := 0
 				for {
 					j++
@@ -112,7 +112,7 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 						break
 					}
 					slog.Error("error update contributor count", "err", err.Error())
-					tx.RollbackTo(SavePointName)
+					tx.RollbackTo(SavePointUpdateTask)
 					if j == config.GlobalConfig.Backend.Retry {
 						tx.Rollback()
 						errC <- ErrReachedRetryTimes

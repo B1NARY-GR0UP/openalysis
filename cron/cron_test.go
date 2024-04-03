@@ -121,7 +121,7 @@ func TestRestart2(t *testing.T) {
 		tx := storage.DB.Begin()
 		err := UpdateTask(context.Background(), tx)
 		if err == nil {
-			tx.SavePoint(SavePointName)
+			tx.SavePoint(SavePointUpdateTask)
 			j := 0
 			for {
 				j++
@@ -131,7 +131,7 @@ func TestRestart2(t *testing.T) {
 					break
 				}
 				slog.Error("error update contributor count", "err", err.Error())
-				tx.RollbackTo(SavePointName)
+				tx.RollbackTo(SavePointUpdateTask)
 				slog.Info("transaction rollback and retry")
 				if j == config.GlobalConfig.Backend.Retry {
 					tx.Rollback()
