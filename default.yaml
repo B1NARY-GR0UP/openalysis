@@ -9,9 +9,6 @@ groups:
     repos:
       - "bytedance/sonic"
       - "bytedance/monoio"
-#  - name: "rainiring"
-#    orgs:
-#      - "rainiring"
 datasource:
   mysql:
     host: "localhost"
@@ -23,3 +20,13 @@ backend:
   cron: "@daily"
   token: ""
   retry: 3
+cleaner:
+  - "`@CloudWeGo` => `CloudWeGo`"
+  - "`Bytedance` => `ByteDance`"
+  - "`@bytedance` => `ByteDance`"
+  - "`@Bytedance` => `ByteDance`"
+  - "`Bytedance Inc` => `ByteDance`"
+  - "`Shanghai` => `Shanghai, China`"
+  - "`BeiJing` => `Beijing, China`"
+  - "`Hangzhou` => `Hangzhou, China`"
+  - "`GuangZhou, China` => `Guangzhou, China`"

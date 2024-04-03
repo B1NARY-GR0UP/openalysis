@@ -24,6 +24,7 @@ type Config struct {
 	Groups     []Group    `yaml:"groups"`
 	DataSource DataSource `yaml:"datasource"`
 	Backend    Backend    `yaml:"backend"`
+	Cleaner    []string   `yaml:"cleaner"`
 }
 
 type Group struct {

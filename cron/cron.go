@@ -24,6 +24,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/client/rest"
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
+	"github.com/B1NARY-GR0UP/openalysis/pkg/cleaner"
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/robfig/cron/v3"
@@ -34,11 +35,16 @@ import (
 
 // TODO: add progress bar
 // TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
+// TODO: clean the db at the end of each task
 
 var ErrReachedRetryTimes = errors.New("error reached retry times")
 
+var GlobalCleaner *cleaner.Cleaner
+
 func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
+
+	GlobalCleaner = cleaner.New(config.GlobalConfig.Cleaner...)
 
 	// 1. init task error
 	// 2. cron add func error
@@ -69,6 +75,8 @@ func Start(ctx context.Context) {
 
 func Restart(ctx context.Context) {
 	slog.Info("openalysis service restarted")
+
+	GlobalCleaner = cleaner.New(config.GlobalConfig.Cleaner...)
 
 	// 1. cache preheat
 	// 2. cron add func error

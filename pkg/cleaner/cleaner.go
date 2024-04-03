@@ -13,3 +13,31 @@
 // limitations under the License.
 
 package cleaner
+
+import "strings"
+
+type Cleaner struct {
+	Strategies map[string]string
+}
+
+// New a Cleaner which accept strategies in "`Before` => `After`" format
+// e.g. "`JustLorain` => `justlorain`"
+func New(strategies ...string) *Cleaner {
+	cleaner := &Cleaner{
+		Strategies: make(map[string]string, len(strategies)),
+	}
+	for _, strategy := range strategies {
+		parts := strings.Split(strategy, "=>")
+		k := parts[0][strings.Index(parts[0], "`")+1 : strings.LastIndex(parts[0], "`")]
+		v := parts[1][strings.Index(parts[1], "`")+1 : strings.LastIndex(parts[1], "`")]
+		cleaner.Strategies[k] = v
+	}
+	return cleaner
+}
+
+func (c *Cleaner) Clean(input string) string {
+	if v, ok := c.Strategies[input]; ok {
+		return v
+	}
+	return input
+}
