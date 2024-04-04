@@ -18,23 +18,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/shurcooL/githubv4"
-	"golang.org/x/oauth2"
 )
-
-var GlobalV4Client *githubv4.Client
-
-// Init githubv4 graphql client
-func Init() {
-	src := oauth2.StaticTokenSource(
-		&oauth2.Token{
-			AccessToken: config.GlobalConfig.Backend.Token,
-		},
-	)
-	httpClient := oauth2.NewClient(context.Background(), src)
-	GlobalV4Client = githubv4.NewClient(httpClient)
-}
 
 type RepoName struct {
 	Organization struct {

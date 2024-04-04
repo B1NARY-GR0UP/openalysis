@@ -18,48 +18,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
 	"github.com/B1NARY-GR0UP/openalysis/util"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
-
-var DB *gorm.DB
-
-func Init() (err error) {
-	dsn := util.AssembleDSN(
-		config.GlobalConfig.DataSource.MySQL.Host,
-		config.GlobalConfig.DataSource.MySQL.Port,
-		config.GlobalConfig.DataSource.MySQL.User,
-		config.GlobalConfig.DataSource.MySQL.Password,
-		config.GlobalConfig.DataSource.MySQL.Database,
-	)
-	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		PrepareStmt: true,
-	})
-	if err != nil {
-		return
-	}
-
-	err = DB.AutoMigrate(
-		&model.Cursor{},
-		&model.Contributor{},
-		&model.Group{},
-		&model.Issue{},
-		&model.Organization{},
-		&model.PullRequest{},
-		&model.Repository{},
-		&model.GroupsOrganizations{},
-		&model.GroupsRepositories{},
-		&model.IssueAssignees{},
-		&model.PullRequestAssignees{},
-	)
-	if err != nil {
-		return
-	}
-	return
-}
 
 func CreateGroup(ctx context.Context, db *gorm.DB, group *model.Group) error {
 	return db.WithContext(ctx).Create(group).Error
