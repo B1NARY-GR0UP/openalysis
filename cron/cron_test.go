@@ -51,31 +51,6 @@ func TestUpdateTask(t *testing.T) {
 	graphql.Init()
 	rest.Init()
 
-	for _, group := range config.GlobalConfig.Groups {
-		for _, login := range group.Orgs {
-			org, err := graphql.QueryOrgInfo(context.Background(), login)
-			if err != nil {
-				t.Fatal(err)
-			}
-			repos, err := graphql.QueryRepoNameByOrg(context.Background(), login)
-			if err != nil {
-				t.Fatal(err)
-			}
-			cache[org.ID] = repos
-		}
-	}
-	err := UpdateTask(context.Background(), storage.DB)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestRestart(t *testing.T) {
-	config.GlobalConfig.ReadInConfig("../default.yaml")
-	storage.Init()
-	graphql.Init()
-	rest.Init()
-
 	err := CachePreheat(context.Background(), storage.DB)
 	if err != nil {
 		t.Fatal(err)
