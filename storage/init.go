@@ -15,6 +15,10 @@
 package storage
 
 import (
+	"log"
+	"os"
+	"time"
+
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
 	"github.com/B1NARY-GR0UP/openalysis/util"
@@ -34,8 +38,13 @@ func Init() (err error) {
 		config.GlobalConfig.DataSource.MySQL.Database,
 	)
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger:      logger.Default.LogMode(logger.Error),
 		PrepareStmt: true,
+		Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  logger.Warn,
+			IgnoreRecordNotFoundError: true, // turn on ignore record not found error option
+			Colorful:                  true,
+		}),
 	})
 	if err != nil {
 		return
