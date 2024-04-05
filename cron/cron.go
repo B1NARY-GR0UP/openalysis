@@ -35,8 +35,6 @@ import (
 
 // TODO: add progress bar
 // TODO: support group, org, repo update in UpdateTask
-// TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
-// TODO: clean the db at the end of each task
 
 var ErrReachedRetryTimes = errors.New("error reached retry times")
 
@@ -258,6 +256,10 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 	}
+	// do clean
+	if err := CleanContributorCompanyAndLocation(ctx, db); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -382,6 +384,10 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 			slog.Error("error update group", "err", err.Error())
 			return err
 		}
+	}
+	// do clean
+	if err := CleanContributorCompanyAndLocation(ctx, db); err != nil {
+		return err
 	}
 	return nil
 }
@@ -789,6 +795,13 @@ func DeleteRepos(ctx context.Context, db *gorm.DB, repos []string) error {
 		if err := storage.DeleteCursor(ctx, db, id); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func CleanContributorCompanyAndLocation(ctx context.Context, db *gorm.DB) error {
+	if err := storage.UpdateContributorCompanyAndLocation(ctx, db, GlobalCleaner.Clean); err != nil {
+		return err
 	}
 	return nil
 }

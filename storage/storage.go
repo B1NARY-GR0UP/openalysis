@@ -301,6 +301,21 @@ func CreateContributors(ctx context.Context, db *gorm.DB, cs []*model.Contributo
 	return db.WithContext(ctx).Create(cs).Error
 }
 
+func UpdateContributorCompanyAndLocation(ctx context.Context, db *gorm.DB, update func(string) string) error {
+	var contributors []model.Contributor
+	if err := db.WithContext(ctx).Find(&contributors).Error; err != nil {
+		return err
+	}
+	for _, contributor := range contributors {
+		contributor.Company = update(contributor.Company)
+		contributor.Location = update(contributor.Location)
+		if err := db.WithContext(ctx).Save(&contributor).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // QueryContributorCountByOrg
 //
 // SELECT COUNT(DISTINCT c.node_id) AS contributor_count

@@ -32,8 +32,8 @@ import (
 )
 
 func TestInitTask(t *testing.T) {
-	config.GlobalConfig.ReadInConfig("../default.yaml")
-	storage.Init()
+	_ = config.GlobalConfig.ReadInConfig("../default.yaml")
+	_ = storage.Init()
 	graphql.Init()
 	rest.Init()
 	err := InitTask(context.Background(), storage.DB) // around 9 min for cloudwego init
@@ -43,8 +43,8 @@ func TestInitTask(t *testing.T) {
 }
 
 func TestUpdateTask(t *testing.T) {
-	config.GlobalConfig.ReadInConfig("../default.yaml")
-	storage.Init()
+	_ = config.GlobalConfig.ReadInConfig("../default.yaml")
+	_ = storage.Init()
 	graphql.Init()
 	rest.Init()
 
@@ -75,8 +75,8 @@ func TestProgressBar(t *testing.T) {
 }
 
 func TestTransaction(t *testing.T) {
-	config.GlobalConfig.ReadInConfig("../default.yaml")
-	storage.Init()
+	_ = config.GlobalConfig.ReadInConfig("../default.yaml")
+	_ = storage.Init()
 	graphql.Init()
 	rest.Init()
 	operation := func(ctx context.Context, db *gorm.DB, count int) error {
@@ -106,5 +106,20 @@ func TestTransaction(t *testing.T) {
 		log.Println("transaction rollback")
 		i++
 		time.Sleep(time.Second * 1)
+	}
+}
+
+func TestClean(t *testing.T) {
+	_ = config.GlobalConfig.ReadInConfig("../default.yaml")
+	_ = storage.Init()
+	ss := []string{
+		"`ByteDance` => `TEST PASS`",
+		"`蚂蚁` => `Alibaba`",
+		"`Beijing` => `Beijing, China`",
+	}
+	_ = GlobalCleaner.AddStrategies(ss...)
+	err := CleanContributorCompanyAndLocation(context.Background(), storage.DB)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
