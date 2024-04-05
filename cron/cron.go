@@ -40,14 +40,13 @@ import (
 
 var ErrReachedRetryTimes = errors.New("error reached retry times")
 
-var GlobalCleaner *cleaner.Cleaner
+var GlobalCleaner = cleaner.New()
 
 func Start(ctx context.Context) error {
 	slog.Info("openalysis service started")
 
 	errC := make(chan error, 1)
 
-	GlobalCleaner = cleaner.New()
 	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
 		return err
 	}
@@ -84,7 +83,6 @@ func Restart(ctx context.Context) error {
 
 	errC := make(chan error, 1)
 
-	GlobalCleaner = cleaner.New()
 	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
 		return err
 	}
