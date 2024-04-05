@@ -53,7 +53,7 @@ func Start(ctx context.Context) error {
 	}
 
 	c := cron.New()
-	if err := AddCronTask(ctx, c, errC); err != nil {
+	if err := AddCronFunc(ctx, c, errC); err != nil {
 		return err
 	}
 
@@ -90,7 +90,7 @@ func Restart(ctx context.Context) error {
 	}
 
 	c := cron.New()
-	if err := AddCronTask(ctx, c, errC); err != nil {
+	if err := AddCronFunc(ctx, c, errC); err != nil {
 		return err
 	}
 
@@ -105,7 +105,7 @@ func Restart(ctx context.Context) error {
 	return nil
 }
 
-func AddCronTask(ctx context.Context, c *cron.Cron, errC chan error) error {
+func AddCronFunc(ctx context.Context, c *cron.Cron, errC chan error) error {
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
 		slog.Info("update task starts now")
 		startUpdate := time.Now()
