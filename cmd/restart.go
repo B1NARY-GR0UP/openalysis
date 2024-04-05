@@ -49,7 +49,9 @@ e.g. oa restart -c "cron-spec" path2config.yaml`,
 		if err := api.Init(); err != nil {
 			cobra.CheckErr(err)
 		}
-		api.Restart(context.Background())
+		if err := api.Restart(context.Background()); err != nil {
+			cobra.CheckErr(err)
+		}
 	},
 }
 

@@ -49,7 +49,9 @@ e.g. oa start -t "your-token" path2config.yaml`,
 		if err := api.Init(); err != nil {
 			cobra.CheckErr(err)
 		}
-		api.Start(context.Background())
+		if err := api.Start(context.Background()); err != nil {
+			cobra.CheckErr(err)
+		}
 	},
 }
 

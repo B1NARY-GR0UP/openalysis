@@ -42,17 +42,19 @@ var ErrReachedRetryTimes = errors.New("error reached retry times")
 
 var GlobalCleaner *cleaner.Cleaner
 
-func Start(ctx context.Context) {
+func Start(ctx context.Context) error {
 	slog.Info("openalysis service started")
 
-	// 1. add strategies error
-	// 2. init task error
-	// 3. cron add func error
-	errC := make(chan error, 3)
+	errC := make(chan error, 1)
 
 	GlobalCleaner = cleaner.New()
 	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
-		errC <- err
+		return err
+	}
+
+	c := cron.New()
+	if err := AddCronTask(ctx, c, errC); err != nil {
+		return err
 	}
 
 	slog.Info("init task starts now")
@@ -61,14 +63,12 @@ func Start(ctx context.Context) {
 	// if init failed, stop service
 	if err := InitTask(ctx, tx); err != nil {
 		tx.Rollback()
-		errC <- err
-	} else {
-		tx.Commit()
-		slog.Info("init task completed", "time", time.Since(startInit).String())
+		return err
 	}
+	tx.Commit()
+	slog.Info("init task completed", "time", time.Since(startInit).String())
 
-	c := cron.New()
-	StartCron(ctx, c, errC)
+	c.Start()
 	defer c.Stop()
 
 	if err := util.WaitSignal(errC); err != nil {
@@ -76,22 +76,25 @@ func Start(ctx context.Context) {
 	}
 
 	slog.Info("openalysis service stopped")
+	return nil
 }
 
-func Restart(ctx context.Context) {
+func Restart(ctx context.Context) error {
 	slog.Info("openalysis service restarted")
 
-	// 1. add strategies error
-	// 2. cron add func error
-	errC := make(chan error, 2)
+	errC := make(chan error, 1)
 
 	GlobalCleaner = cleaner.New()
 	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
-		errC <- err
+		return err
 	}
 
 	c := cron.New()
-	StartCron(ctx, c, errC)
+	if err := AddCronTask(ctx, c, errC); err != nil {
+		return err
+	}
+
+	c.Start()
 	defer c.Stop()
 
 	if err := util.WaitSignal(errC); err != nil {
@@ -99,9 +102,10 @@ func Restart(ctx context.Context) {
 	}
 
 	slog.Info("openalysis service stopped")
+	return nil
 }
 
-func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
+func AddCronTask(ctx context.Context, c *cron.Cron, errC chan error) error {
 	if _, err := c.AddFunc(config.GlobalConfig.Backend.Cron, func() {
 		slog.Info("update task starts now")
 		startUpdate := time.Now()
@@ -124,10 +128,9 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 		}
 		slog.Info("update task completed", "time", time.Since(startUpdate).String())
 	}); err != nil {
-		slog.Error("error add cron func", "err", err)
-		errC <- err
+		return err
 	}
-	c.Start()
+	return nil
 }
 
 type Count struct {

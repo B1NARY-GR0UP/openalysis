@@ -24,12 +24,12 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 )
 
-func Start(ctx context.Context) {
-	cron.Start(ctx)
+func Start(ctx context.Context) error {
+	return cron.Start(ctx)
 }
 
-func Restart(ctx context.Context) {
-	cron.Restart(ctx)
+func Restart(ctx context.Context) error {
+	return cron.Restart(ctx)
 }
 
 func ReadInConfig(path string) error {
