@@ -18,7 +18,8 @@ datasource:
     database: "openalysis?charset=utf8&parseTime=True&loc=Local"
 backend:
   cron: "@daily"
-  token: ""
+  # delete after presentation
+  token: "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"
   retry: 3
 cleaner:
   - "`@CloudWeGo` => `CloudWeGo`"
