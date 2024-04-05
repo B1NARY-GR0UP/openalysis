@@ -49,6 +49,9 @@ func TestUpdateTask(t *testing.T) {
 	rest.Init()
 
 	slog.Info("update task starts now")
+	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
+		t.Fatal(err)
+	}
 	startUpdate := time.Now()
 	tx := storage.DB.Begin()
 	err := UpdateTask(context.Background(), tx)
