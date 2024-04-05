@@ -13,7 +13,7 @@ go install github.com/B1NARY-GR0UP/openalysis@latest
 - Get Library
 
 ```shell
-go get github.com/B1NARY-GR0UP/openalysis
+go get -u github.com/B1NARY-GR0UP/openalysis
 ```
 
 ## Usage

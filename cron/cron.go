@@ -28,12 +28,12 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/robfig/cron/v3"
+	"github.com/schollz/progressbar/v3"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
-// TODO: add progress bar
 // TODO: support group, org, repo update in UpdateTask
 
 var ErrReachedRetryTimes = errors.New("error reached retry times")
@@ -139,9 +139,15 @@ type Count struct {
 func InitTask(ctx context.Context, db *gorm.DB) error {
 	// handle groups
 	for _, group := range config.GlobalConfig.Groups {
+		// new progressbar
+		bar := progressbar.Default(int64(len(group.Orgs)+len(group.Repos)), "HANDLING GROUP: "+group.Name)
+
 		var groupCount Count
 		// handle orgs in groups
 		for _, login := range group.Orgs {
+			// increase bar
+			_ = bar.Add(1)
+
 			var orgCount Count
 			// org data
 			org, err := graphql.QueryOrgInfo(ctx, login)
@@ -211,6 +217,9 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 		}
 		// handle repos in group
 		for _, nameWithOwner := range group.Repos {
+			// increase bar
+			_ = bar.Add(1)
+
 			owner, name := util.SplitNameWithOwner(nameWithOwner)
 			rd := &RepoData{
 				Owner:         owner,
@@ -265,8 +274,14 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 
 func UpdateTask(ctx context.Context, db *gorm.DB) error {
 	for _, group := range config.GlobalConfig.Groups {
+		// new progressbar
+		bar := progressbar.Default(int64(len(group.Orgs)+len(group.Repos)), "HANDLING GROUP: "+group.Name)
+
 		var groupCount Count
 		for _, login := range group.Orgs {
+			// increase bar
+			_ = bar.Add(1)
+
 			var orgCount Count
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
@@ -343,6 +358,9 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 			}
 		}
 		for _, nameWithOwner := range group.Repos {
+			// increase bar
+			_ = bar.Add(1)
+
 			owner, name := util.SplitNameWithOwner(nameWithOwner)
 			rd := &RepoData{
 				Owner:         owner,
