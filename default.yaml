@@ -19,7 +19,7 @@ datasource:
 backend:
   cron: "@daily"
   # delete after presentation
-  token: "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"
+  token: ""
   retry: 3
 cleaner:
   - "`@CloudWeGo` => `CloudWeGo`"
