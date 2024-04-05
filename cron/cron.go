@@ -78,14 +78,8 @@ func Restart(ctx context.Context) {
 
 	GlobalCleaner = cleaner.New(config.GlobalConfig.Cleaner...)
 
-	// 1. cache preheat
-	// 2. cron add func error
-	errC := make(chan error, 2)
-
-	// if cache preheat failed, stop service
-	if err := CachePreheat(ctx, storage.DB); err != nil {
-		errC <- err
-	}
+	// 1. cron add func error
+	errC := make(chan error, 1)
 
 	c := cron.New()
 	StartCron(ctx, c, errC)
@@ -127,19 +121,6 @@ func StartCron(ctx context.Context, c *cron.Cron, errC chan error) {
 	c.Start()
 }
 
-// TODO: remove
-// map[orgNodeID][]repoNameWithOwner
-var cache = make(map[string][]string)
-
-func CachePreheat(ctx context.Context, db *gorm.DB) error {
-	orgRepos, err := storage.QueryOrgRepos(ctx, db)
-	if err != nil {
-		return err
-	}
-	cache = orgRepos
-	return nil
-}
-
 type Count struct {
 	IssueCount       int
 	PullRequestCount int
@@ -165,8 +146,6 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 				slog.Error("error query repo name by org", "err", err.Error())
 				return err
 			}
-
-			cache[org.ID] = repos
 
 			// handle repos in org
 			for _, nameWithOwner := range repos {
@@ -289,14 +268,19 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 				return err
 			}
 
-			_, deleteNeeded := util.CompareSlices(cache[org.ID], repos)
+			oldRepos, err := storage.QueryReposByOrg(ctx, db, org.ID)
+			if err != nil {
+				slog.Error("error query repos by org", "err", err.Error())
+				return err
+			}
+
+			_, deleteNeeded := util.CompareSlices(oldRepos, repos)
+
+			// delete repos if org delete it
 			if err := DeleteRepos(ctx, db, deleteNeeded); err != nil {
 				slog.Error("error delete repos", "err", err.Error())
 				return err
 			}
-
-			// update cache
-			cache[org.ID] = repos
 
 			for _, nameWithOwner := range repos {
 				owner, name := util.SplitNameWithOwner(nameWithOwner)

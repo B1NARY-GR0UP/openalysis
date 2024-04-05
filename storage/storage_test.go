@@ -140,3 +140,20 @@ func TestUpdateOrganization(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestQueryReposByOrg(t *testing.T) {
+	err := config.GlobalConfig.ReadInConfig("../default.yaml")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = Init()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	repos, err := QueryReposByOrg(context.Background(), DB, "O_kgDOBkfivw")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(repos)
+	fmt.Println(len(repos))
+}

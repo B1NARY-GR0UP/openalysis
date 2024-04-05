@@ -17,11 +17,8 @@ package cron
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"log/slog"
-	"reflect"
-	"sort"
 	"testing"
 	"time"
 
@@ -51,15 +48,10 @@ func TestUpdateTask(t *testing.T) {
 	graphql.Init()
 	rest.Init()
 
-	err := CachePreheat(context.Background(), storage.DB)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	slog.Info("update task starts now")
 	startUpdate := time.Now()
 	tx := storage.DB.Begin()
-	err = UpdateTask(context.Background(), tx)
+	err := UpdateTask(context.Background(), tx)
 	if err == nil {
 		tx.Commit()
 	} else {
@@ -115,74 +107,4 @@ func TestTransaction(t *testing.T) {
 		i++
 		time.Sleep(time.Second * 1)
 	}
-}
-
-func TestCachePreheat(t *testing.T) {
-	config.GlobalConfig.ReadInConfig("../default.yaml")
-	storage.Init()
-	graphql.Init()
-	rest.Init()
-
-	latest := make(map[string][]string)
-	for _, group := range config.GlobalConfig.Groups {
-		for _, login := range group.Orgs {
-			org, err := graphql.QueryOrgInfo(context.Background(), login)
-			if err != nil {
-				t.Fatal(err)
-			}
-			repos, err := graphql.QueryRepoNameByOrg(context.Background(), login)
-			if err != nil {
-				t.Fatal(err)
-			}
-			latest[org.ID] = repos
-		}
-	}
-	err := CachePreheat(context.Background(), storage.DB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	//fmt.Println("latest:", latest)
-	for k, v := range latest {
-		fmt.Println(k)
-		fmt.Println(len(v))
-	}
-	//fmt.Println("cache:", cache)
-	fmt.Println()
-	for k, v := range cache {
-		fmt.Println(k)
-		fmt.Println(len(v))
-	}
-	fmt.Println(compareMaps(latest, cache))
-}
-
-func compareMaps(map1, map2 map[string][]string) bool {
-	if len(map1) != len(map2) {
-		return false
-	}
-
-	for key, value1 := range map1 {
-		if value2, ok := map2[key]; !ok {
-			return false
-		} else {
-			sort.Strings(value1)
-			sort.Strings(value2)
-			if !reflect.DeepEqual(value1, value2) {
-				return false
-			}
-		}
-	}
-
-	return true
-}
-
-func TestMap(t *testing.T) {
-	map1 := map[string][]string{
-		"hello": []string{"1", "3", "5"},
-		"world": []string{"2", "4", "6"},
-	}
-	map2 := map[string][]string{
-		"hello": []string{"3", "1", "5"},
-		"world": []string{"2", "4", "6"},
-	}
-	fmt.Println(compareMaps(map1, map2))
 }
