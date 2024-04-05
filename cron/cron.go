@@ -45,11 +45,15 @@ var GlobalCleaner *cleaner.Cleaner
 func Start(ctx context.Context) {
 	slog.Info("openalysis service started")
 
-	GlobalCleaner = cleaner.New(config.GlobalConfig.Cleaner...)
+	// 1. add strategies error
+	// 2. init task error
+	// 3. cron add func error
+	errC := make(chan error, 3)
 
-	// 1. init task error
-	// 2. cron add func error
-	errC := make(chan error, 2)
+	GlobalCleaner = cleaner.New()
+	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
+		errC <- err
+	}
 
 	slog.Info("init task starts now")
 	startInit := time.Now()
@@ -77,10 +81,14 @@ func Start(ctx context.Context) {
 func Restart(ctx context.Context) {
 	slog.Info("openalysis service restarted")
 
-	GlobalCleaner = cleaner.New(config.GlobalConfig.Cleaner...)
+	// 1. add strategies error
+	// 2. cron add func error
+	errC := make(chan error, 2)
 
-	// 1. cron add func error
-	errC := make(chan error, 1)
+	GlobalCleaner = cleaner.New()
+	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
+		errC <- err
+	}
 
 	c := cron.New()
 	StartCron(ctx, c, errC)

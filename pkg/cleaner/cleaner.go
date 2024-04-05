@@ -14,25 +14,47 @@
 
 package cleaner
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+	"sync"
+)
 
 type Cleaner struct {
+	mu         sync.Mutex
 	Strategies map[string]string
 }
 
-// New a Cleaner which accept strategies in "`Before` => `After`" format
-// e.g. "`JustLorain` => `justlorain`"
-func New(strategies ...string) *Cleaner {
-	cleaner := &Cleaner{
-		Strategies: make(map[string]string, len(strategies)),
+// New a Cleaner
+func New() *Cleaner {
+	return &Cleaner{
+		Strategies: make(map[string]string),
 	}
+}
+
+// AddStrategies accepts strategies in "`Before` => `After`" format
+// e.g. "`JustLorain` => `justlorain`"
+func (c *Cleaner) AddStrategies(strategies ...string) error {
 	for _, strategy := range strategies {
 		parts := strings.Split(strategy, "=>")
-		k := parts[0][strings.Index(parts[0], "`")+1 : strings.LastIndex(parts[0], "`")]
-		v := parts[1][strings.Index(parts[1], "`")+1 : strings.LastIndex(parts[1], "`")]
-		cleaner.Strategies[k] = v
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid strategy format: %s", strategy)
+		}
+
+		k := strings.Trim(parts[0], "` ")
+		v := strings.Trim(parts[1], "` ")
+
+		c.mu.Lock()
+		c.Strategies[k] = v
+		c.mu.Unlock()
 	}
-	return cleaner
+	return nil
+}
+
+func (c *Cleaner) DeleteStrategies(before string) {
+	c.mu.Lock()
+	delete(c.Strategies, before)
+	c.mu.Unlock()
 }
 
 func (c *Cleaner) Clean(input string) string {
