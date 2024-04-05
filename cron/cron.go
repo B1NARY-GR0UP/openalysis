@@ -34,6 +34,7 @@ import (
 )
 
 // TODO: add progress bar
+// TODO: support group, org, repo update in UpdateTask
 // TODO: data cleaning e.g. ByteDance, bytedance, Bytedance => bytedance
 // TODO: clean the db at the end of each task
 
@@ -252,7 +253,6 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 }
 
 func UpdateTask(ctx context.Context, db *gorm.DB) error {
-	// TODO: handle new org and new repo, join table need update
 	for _, group := range config.GlobalConfig.Groups {
 		var groupCount Count
 		for _, login := range group.Orgs {
