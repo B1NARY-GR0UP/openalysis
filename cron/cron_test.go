@@ -60,7 +60,7 @@ func TestUpdateTask(t *testing.T) {
 	} else {
 		slog.Error("error doing update task", "err", err.Error())
 		tx.Rollback()
-		slog.Info("transaction rollback and retry")
+		slog.Info("transaction rollback")
 	}
 	slog.Info("update task completed", "time", time.Since(startUpdate).String())
 }

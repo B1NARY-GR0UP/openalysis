@@ -21,13 +21,22 @@ backend:
   # delete after presentation
   token: ""
   retry: 3
+# "`Before` => `After`"
 cleaner:
   - "`@CloudWeGo` => `CloudWeGo`"
+  - "`@cloudwego` => `CloudWeGo`"
   - "`Bytedance` => `ByteDance`"
   - "`@bytedance` => `ByteDance`"
   - "`@Bytedance` => `ByteDance`"
+  - "`@ByteDance` => `ByteDance`"
   - "`Bytedance Inc` => `ByteDance`"
+  - "`@tencent` => `Tencent`"
   - "`Shanghai` => `Shanghai, China`"
   - "`BeiJing` => `Beijing, China`"
+  - "`Beijing` => `Beijing, China`"
+  - "`beijing` => `Beijing, China`"
   - "`Hangzhou` => `Hangzhou, China`"
+  - "`HangZhou` => `Hangzhou, China`"
+  - "`hangzhou` => `Hangzhou, China`"
   - "`GuangZhou, China` => `Guangzhou, China`"
+  - "`chongqing` => `Chongqing, China`"
