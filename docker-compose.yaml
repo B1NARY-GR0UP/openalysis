@@ -22,3 +22,6 @@ services:
   openalysis:
     build: .
     command: ["/app/oa", "start", "-c", "@hourly", "-t", "token"]
+    depends_on:
+      - mysql
+      - grafana
