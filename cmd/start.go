@@ -27,7 +27,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "start openalysis service",
 	Long: `start openalysis service 
-e.g. oa start -t "your-token" path2config.yaml`,
+e.g. oa start -t "your-github-token" path2config.yaml`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		configPath := ""

@@ -13,5 +13,6 @@ FROM scratch
 
 WORKDIR /src
 COPY --from=build /app/oa /app/oa
+COPY default.yaml /src/default.yaml
 
 ENTRYPOINT ["/app/oa"]
