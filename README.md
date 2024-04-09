@@ -28,6 +28,22 @@ oa start -t "your-token" -c "cron-spec" -r "retry-times" path2config.yaml
 
 TODO
 
+```shell
+docker-compose up --build
+```
+
+```shell
+docker build -t oa .
+```
+
+```shell
+docker run -it oa --version
+```
+
+```shell
+docker run -it -v path2config.yaml:/src oa start path2config.yaml
+```
+
 ## Example
 
 ![example-1](./images/example-1.png)

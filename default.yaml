@@ -11,7 +11,7 @@ groups:
       - "bytedance/monoio"
 datasource:
   mysql:
-    host: "localhost"
+    host: "mysql"
     port: "3306"
     user: "openalysis"
     password: "openalysis"

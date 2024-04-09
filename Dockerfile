@@ -9,7 +9,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o oa .
 
 
-FROM scratch
+FROM alpine
 
 WORKDIR /src
 COPY --from=build /app/oa /app/oa
