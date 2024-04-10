@@ -493,7 +493,7 @@ func CreateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 			Number:         issue.Number,
 			State:          issue.State,
 			IssueCreatedAt: issue.CreatedAt,
-			IssueClosedAt:  issue.ClosedAt,
+			IssueClosedAt:  util.NilIfZero(issue.ClosedAt),
 		})
 		if !util.IsEmptySlice(issue.Assignees.Nodes) && githubv4.IssueState(issue.State) == githubv4.IssueStateOpen {
 			for _, assignee := range issue.Assignees.Nodes {
@@ -525,8 +525,8 @@ func CreateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 			Number:       pr.Number,
 			State:        pr.State,
 			PRCreatedAt:  pr.CreatedAt,
-			PRMergedAt:   pr.MergedAt,
-			PRClosedAt:   pr.ClosedAt,
+			PRMergedAt:   util.NilIfZero(pr.MergedAt),
+			PRClosedAt:   util.NilIfZero(pr.ClosedAt),
 		})
 		if !util.IsEmptySlice(pr.Assignees.Nodes) && githubv4.PullRequestState(pr.State) == githubv4.PullRequestStateOpen {
 			for _, assignee := range pr.Assignees.Nodes {
@@ -589,7 +589,7 @@ func UpdateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 			if err := storage.UpdateIssue(ctx, db, &model.Issue{
 				NodeID:        issue.ID,
 				State:         issue.State,
-				IssueClosedAt: issue.ClosedAt,
+				IssueClosedAt: util.NilIfZero(issue.ClosedAt),
 			}); err != nil {
 				return err
 			}
@@ -604,7 +604,7 @@ func UpdateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 					Number:         issue.Number,
 					State:          issue.State,
 					IssueCreatedAt: issue.CreatedAt,
-					IssueClosedAt:  issue.ClosedAt,
+					IssueClosedAt:  util.NilIfZero(issue.ClosedAt),
 				},
 			}); err != nil {
 				return err
@@ -679,8 +679,8 @@ func UpdateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 		if err := storage.UpdatePullRequest(ctx, db, &model.PullRequest{
 			NodeID:     pr.ID,
 			State:      pr.State,
-			PRMergedAt: pr.MergedAt,
-			PRClosedAt: pr.ClosedAt,
+			PRMergedAt: util.NilIfZero(pr.MergedAt),
+			PRClosedAt: util.NilIfZero(pr.ClosedAt),
 		}); err != nil {
 			return err
 		}
@@ -747,8 +747,8 @@ func UpdateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 			Number:       pr.Number,
 			State:        pr.State,
 			PRCreatedAt:  pr.CreatedAt,
-			PRMergedAt:   pr.MergedAt,
-			PRClosedAt:   pr.ClosedAt,
+			PRMergedAt:   util.NilIfZero(pr.MergedAt),
+			PRClosedAt:   util.NilIfZero(pr.ClosedAt),
 		})
 		// handle update in pull_request_assignees table
 		if !util.IsEmptySlice(pr.Assignees.Nodes) && githubv4.PullRequestState(pr.State) == githubv4.PullRequestStateOpen {

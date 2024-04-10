@@ -22,6 +22,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // SplitNameWithOwner split nameWithOwner string into owner and name string
@@ -82,6 +83,13 @@ func IsEmptySlice[T any](slice []T) bool {
 		return true
 	}
 	return false
+}
+
+func NilIfZero(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
 }
 
 // CompareSlices compare elements in  two slices

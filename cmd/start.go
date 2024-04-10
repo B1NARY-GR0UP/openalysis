@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"time"
 
 	"github.com/B1NARY-GR0UP/openalysis/api"
 	"github.com/B1NARY-GR0UP/openalysis/util"
@@ -30,6 +31,8 @@ var startCmd = &cobra.Command{
 e.g. oa start -t "your-github-token" path2config.yaml`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		// wait for other services started
+		time.Sleep(time.Second * 3)
 		configPath := ""
 		if !util.IsEmptySlice(args) {
 			configPath = args[0]

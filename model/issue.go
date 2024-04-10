@@ -35,7 +35,7 @@ type Issue struct {
 	State string
 
 	IssueCreatedAt time.Time
-	IssueClosedAt  time.Time
+	IssueClosedAt  *time.Time
 }
 
 // IssueAssignees an issue can have multi assignees

@@ -35,8 +35,8 @@ type PullRequest struct {
 	State string
 
 	PRCreatedAt time.Time
-	PRMergedAt  time.Time
-	PRClosedAt  time.Time
+	PRMergedAt  *time.Time
+	PRClosedAt  *time.Time
 }
 
 // PullRequestAssignees a pr can have multi reviewers
