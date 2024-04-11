@@ -159,6 +159,8 @@ docker-compose up --build
 
 - Build from Dockerfile
 
+Start your MySQL and Grafana.
+
 ```shell
 docker build -t oa .
 ```
