@@ -42,7 +42,9 @@ Flags:
 ```
 
 **NOTE:**
+
 **1. All configurations are based on the configuration file, and if flags are set, they will override the configurations in the configuration file.**
+
 **2. If the configuration file path is not specified, the project's default configuration file will be used.**
 
 ### Start - Start OPENALYSIS service
@@ -96,6 +98,7 @@ oa restart -t "example-github-token"
 - **groups**
  
 Configure the organization or repository you want to analyze on a group basis. 
+
 You can set up multiple groups, where each group can contain multiple organizations or repositories.
 
 - **datasource**
