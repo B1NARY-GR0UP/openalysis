@@ -9,6 +9,8 @@ services:
       - MYSQL_USER=openalysis
       - MYSQL_PASSWORD=openalysis
       - MYSQL_RANDOM_ROOT_PASSWORD="yes"
+    command:
+      --sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
 
   grafana:
     image: grafana/grafana:latest
