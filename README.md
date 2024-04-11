@@ -29,7 +29,7 @@ go get -u github.com/B1NARY-GR0UP/openalysis
 
 ```shell
 Usage:        
-  oa [command]
+  openalysis [command]
 
 Available Commands:
   help        Help about any command
@@ -37,8 +37,8 @@ Available Commands:
   start       start openalysis service
 
 Flags:
-  -h, --help      help for oa
-  -v, --version   version for oa
+  -h, --help      help for openalysis
+  -v, --version   version for openalysis
 ```
 
 **NOTE:**
@@ -52,7 +52,7 @@ Flags:
 - **Usage**
 
 ```shell
-oa start [flags] [path2config]
+openalysis start [flags] [path2config]
 ```
 
 - **Flags**
@@ -67,7 +67,7 @@ oa start [flags] [path2config]
 - **Example**
 
 ```shell
-oa start -c "@hourly" -r "5" config.yaml
+openalysis start -c "@hourly" -r "5" config.yaml
 ```
 
 ### Restart - Restart OPENALYSIS service
@@ -75,7 +75,7 @@ oa start -c "@hourly" -r "5" config.yaml
 - **Usage**
 
 ```shell
-oa restart [flags] [path2config]
+openalysis restart [flags] [path2config]
 ```
 
 - **Flags**
@@ -90,7 +90,7 @@ oa restart [flags] [path2config]
 - **Example**
 
 ```shell
-oa restart -t "example-github-token"
+openalysis restart -t "example-github-token"
 ```
 
 ### Sample Configuration File
@@ -162,11 +162,11 @@ docker-compose up --build
 Start your MySQL and Grafana.
 
 ```shell
-docker build -t oa .
+docker build -t openalysis .
 ```
 
 ```shell
-docker run -it -v path2config.yaml:/src oa start path2config.yaml
+docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 ```
 
 ### Step 3: Config Grafana

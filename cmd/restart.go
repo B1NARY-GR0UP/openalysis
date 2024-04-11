@@ -27,7 +27,7 @@ var restartCmd = &cobra.Command{
 	Use:   "restart",
 	Short: "restart openalysis service",
 	Long: `restart openalysis service 
-e.g. oa restart -c "cron-spec" path2config.yaml`,
+e.g. openalysis restart -c "cron-spec" path2config.yaml`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		configPath := ""

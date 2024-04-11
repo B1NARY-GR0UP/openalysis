@@ -21,7 +21,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   CMD,
+	Use:   Name,
 	Short: "OPEN ANALYSIS SERVICE",
 	Long: `
  ██████╗ ██████╗ ███████╗███╗   ██╗ █████╗ ██╗  ██╗   ██╗███████╗██╗███████╗

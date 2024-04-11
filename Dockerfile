@@ -6,13 +6,13 @@ COPY go.mod go.sum ./
 RUN go mod tidy
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o oa .
+RUN CGO_ENABLED=0 GOOS=linux go build -o openalysis .
 
 
 FROM alpine
 
 WORKDIR /src
-COPY --from=build /app/oa /app/oa
+COPY --from=build /app/openalysis /app/openalysis
 COPY default.yaml /src/default.yaml
 
-ENTRYPOINT ["/app/oa"]
+ENTRYPOINT ["/app/openalysis"]
