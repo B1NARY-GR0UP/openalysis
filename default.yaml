@@ -18,8 +18,7 @@ datasource:
     database: "openalysis?charset=utf8&parseTime=True&loc=Local"
 backend:
   cron: "@daily"
-  # delete after presentation
-  token: ""
+  token: "your-github-token"
   retry: 3
 # "`Before` => `After`"
 cleaner:
