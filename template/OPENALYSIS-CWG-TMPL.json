@@ -843,6 +843,7 @@
         "type": "mysql",
         "uid": "${DS_OPENALYSIS-MYSQL}"
       },
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -857,7 +858,6 @@
             "filterable": true,
             "inspect": false
           },
-          "fieldMinMax": false,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -874,7 +874,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Count"
+              "options": "Days to Date"
             },
             "properties": [
               {
@@ -901,7 +901,7 @@
         "x": 12,
         "y": 17
       },
-      "id": 28,
+      "id": 29,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -917,14 +917,14 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "Count"
+            "displayName": "Days to Date"
           }
         ]
       },
       "pluginVersion": "10.3.3",
       "targets": [
         {
-          "dataset": "mysql",
+          "dataset": "gorm",
           "datasource": {
             "type": "mysql",
             "uid": "${DS_OPENALYSIS-MYSQL}"
@@ -932,7 +932,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n    c.login AS `Name`,\r\n    GROUP_CONCAT(DISTINCT CONCAT(r.owner, '/', r.name) SEPARATOR ', ') AS `Project Involved`,\r\n    COUNT(DISTINCT r.node_id) AS `Count`\r\nFROM contributors c\r\nJOIN repositories r ON c.repo_node_id = r.node_id\r\nGROUP BY c.login;\r\n",
+          "rawSql": "SELECT\r\n    contributors.login AS `Name`,\r\n    repositories.owner AS `Organization`,\r\n    repositories.name AS `Repository`,\r\n    earliest_prs.number AS `PR Number`,\r\n    DATEDIFF(CURRENT_DATE, earliest_prs.pr_created_at) AS `Days to Date`\r\nFROM\r\n    openalysis.contributors\r\nINNER JOIN\r\n    (\r\n        SELECT\r\n            prs.author,\r\n            prs.pr_created_at,\r\n            prs.repo_node_id,\r\n            prs.number\r\n        FROM\r\n            (\r\n                SELECT\r\n                    author,\r\n                    pr_created_at,\r\n                    repo_node_id,\r\n                    number,\r\n                    ROW_NUMBER() OVER(PARTITION BY author ORDER BY pr_created_at) as rn\r\n                FROM\r\n                    openalysis.pull_requests\r\n            ) AS prs\r\n        WHERE\r\n            prs.rn = 1\r\n    ) AS earliest_prs\r\nON\r\n    contributors.login = earliest_prs.author\r\nINNER JOIN\r\n    repositories\r\nON\r\n    repositories.node_id = earliest_prs.repo_node_id\r\nGROUP BY\r\n    contributors.login;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -953,7 +953,7 @@
           }
         }
       ],
-      "title": "CloudWeGo Family Contributor Project Involved",
+      "title": "CloudWeGo Family Contributor Days to Date",
       "type": "table"
     },
     {
@@ -1092,6 +1092,124 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "fixedColor": "super-light-blue",
+            "mode": "fixed"
+          },
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "color-text"
+            },
+            "filterable": true,
+            "inspect": false
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "super-light-blue",
+                "value": null
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-BlYlRd"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "id": 28,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Count"
+          }
+        ]
+      },
+      "pluginVersion": "10.3.3",
+      "targets": [
+        {
+          "dataset": "mysql",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    c.login AS `Name`,\r\n    GROUP_CONCAT(DISTINCT CONCAT(r.owner, '/', r.name) SEPARATOR ', ') AS `Project Involved`,\r\n    COUNT(DISTINCT r.node_id) AS `Count`\r\nFROM contributors c\r\nJOIN repositories r ON c.repo_node_id = r.node_id\r\nGROUP BY c.login;\r\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "CloudWeGo Family Contributor Project Involved",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "mysql",
+        "uid": "${DS_OPENALYSIS-MYSQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "palette-classic"
           },
           "custom": {
@@ -1146,8 +1264,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 25
+        "x": 0,
+        "y": 33
       },
       "id": 10,
       "options": {
@@ -1378,302 +1496,6 @@
         }
       ],
       "title": "CloudWeGo Family Repository Star Count",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "mysql",
-        "uid": "${DS_OPENALYSIS-MYSQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": true,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineStyle": {
-              "fill": "solid"
-            },
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unitScale": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 33
-      },
-      "id": 12,
-      "options": {
-        "legend": {
-          "calcs": [
-            "max",
-            "min",
-            "range"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "dataset": "gorm",
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_OPENALYSIS-MYSQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n    issue_count as `hertz`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'hertz';",
-          "refId": "hertz",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        },
-        {
-          "dataset": "gorm",
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_OPENALYSIS-MYSQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n    issue_count as `kitex`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'kitex';",
-          "refId": "kitex",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        },
-        {
-          "dataset": "gorm",
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_OPENALYSIS-MYSQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n    issue_count as `netpoll`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'netpoll';",
-          "refId": "netpoll",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        },
-        {
-          "dataset": "gorm",
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_OPENALYSIS-MYSQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n    issue_count as `volo`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'volo';",
-          "refId": "volo",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        },
-        {
-          "dataset": "gorm",
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_OPENALYSIS-MYSQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n    issue_count as `shmipc-go`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'shmipc-go';",
-          "refId": "shmipc-go",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        },
-        {
-          "dataset": "gorm",
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_OPENALYSIS-MYSQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n    issue_count as `sonic`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'sonic';",
-          "refId": "sonic",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        },
-        {
-          "dataset": "gorm",
-          "datasource": {
-            "type": "mysql",
-            "uid": "${DS_OPENALYSIS-MYSQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT\r\n    issue_count as `monoio`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'monoio';",
-          "refId": "monoio",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "CloudWeGo Family Repository Issue Count",
       "type": "timeseries"
     },
     {
@@ -2037,6 +1859,302 @@
         "x": 0,
         "y": 41
       },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "min",
+            "range"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "dataset": "gorm",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    issue_count as `hertz`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'hertz';",
+          "refId": "hertz",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "dataset": "gorm",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    issue_count as `kitex`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'kitex';",
+          "refId": "kitex",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "dataset": "gorm",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    issue_count as `netpoll`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'netpoll';",
+          "refId": "netpoll",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "dataset": "gorm",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    issue_count as `volo`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'volo';",
+          "refId": "volo",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "dataset": "gorm",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    issue_count as `shmipc-go`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'shmipc-go';",
+          "refId": "shmipc-go",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "dataset": "gorm",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    issue_count as `sonic`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'sonic';",
+          "refId": "sonic",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "dataset": "gorm",
+          "datasource": {
+            "type": "mysql",
+            "uid": "${DS_OPENALYSIS-MYSQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    issue_count as `monoio`,\r\n    created_at\r\nFROM openalysis.repositories\r\nWHERE name = 'monoio';",
+          "refId": "monoio",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "CloudWeGo Family Repository Issue Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "mysql",
+        "uid": "${DS_OPENALYSIS-MYSQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
       "id": 14,
       "options": {
         "legend": {
@@ -2330,8 +2448,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 41
+        "x": 0,
+        "y": 49
       },
       "id": 13,
       "options": {
@@ -2579,6 +2697,6 @@
   "timezone": "",
   "title": "OPENALYSIS-CWG-TMPL",
   "uid": "d37734e3-c737-409b-b697-e067c8f1ea1b",
-  "version": 20,
+  "version": 21,
   "weekStart": ""
 }

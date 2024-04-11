@@ -52,6 +52,8 @@ docker run -it -v path2config.yaml:/src oa start path2config.yaml
 
 ![example-3](./images/example-3.png)
 
+![example-3](./images/example-4.png)
+
 ## Related Projects
 
 - [cwg-open-analysis](https://github.com/cloudwego-contrib/cwgo-open-analysis)
