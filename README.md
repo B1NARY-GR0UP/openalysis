@@ -1,5 +1,7 @@
 # OPENALYSIS
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/B1NARY-GR0UP/openalysis)](https://goreportcard.com/report/github.com/B1NARY-GR0UP/openalysis)
+
 > You Can (Not) Observe
 
 ![OPENALYSIS](./images/OPENALYSIS.png)
