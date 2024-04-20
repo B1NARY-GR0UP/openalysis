@@ -39,3 +39,5 @@ cleaner:
   - "`hangzhou` => `Hangzhou, China`"
   - "`GuangZhou, China` => `Guangzhou, China`"
   - "`chongqing` => `Chongqing, China`"
+  - "`中国` => `Other, China`"
+  - "`China` => `Other, China`"

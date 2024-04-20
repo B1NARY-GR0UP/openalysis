@@ -187,9 +187,13 @@ docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 
 ![example-3](./images/example-4.png)
 
-## Related Projects
+## TODO
 
-- [cwg-open-analysis](https://github.com/cloudwego-contrib/cwgo-open-analysis)
+- [ ] org, group time series support
+- [ ] leaderboard, issue, pr adapt to time range
+- [ ] support for marking contributor company manually
+- [ ] issue, pr number => issue. pr id
+- [ ] use dashboard variable to implement personal dashboard display
 
 ## Acknowledgement
 
