@@ -187,6 +187,10 @@ docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 
 ![example-3](./images/example-4.png)
 
+## Blogs
+
+- [How to Visualize and Analyze Data in Open Source Communities](https://dev.to/justlorain/how-to-visualize-and-analyze-data-in-open-source-communities-1l35) | [中文](https://juejin.cn/post/7359882185362948135)
+
 ## TODO
 
 - [ ] org, group time series support
