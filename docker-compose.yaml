@@ -4,6 +4,8 @@ services:
     image: mysql:latest
     ports:
       - "3306:3306"
+    volumes:
+      - ./storage/sql:/docker-entrypoint-initdb.d
     environment:
       - MYSQL_DATABASE=openalysis
       - MYSQL_USER=openalysis
