@@ -199,6 +199,11 @@ docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 - [ ] issue, pr number => issue. pr id
 - [ ] use dashboard variable to implement personal dashboard display
 
+---
+
+- [ ] use fyne to dev desktop application
+- [ ] parse json to adapt general template
+
 ## Acknowledgement
 
 Sincere appreciation to the [CloudWeGo](https://github.com/cloudwego) community, without whose help this project would not have been possible.
