@@ -194,10 +194,10 @@ docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 ## TODO
 
 - [x] support for marking contributor company manually
-- [ ] org, group time series support
+- [x] org, group time series support
+- [x] issue, pr number => issue, pr id
 - [ ] leaderboard, issue, pr adapt to time range
-- [ ] issue, pr number => issue, pr id
-- [ ] use dashboard variable to implement personal dashboard display
+- [ ] personal dashboard (dashboard variable + dashboard link)
 
 ---
 

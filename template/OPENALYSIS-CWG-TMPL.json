@@ -781,7 +781,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  assignee_login as `Assignee`,\r\n  issue_repo_name as `Repo`,\r\n  issue_url as `Issue URL`,\r\n  issue_number as `Issue Number`\r\nFROM\r\n  openalysis.issue_assignees;",
+          "rawSql": "SELECT\r\n  assignee_login as `Assignee`,\r\n  issue_repo_name as `Repo`,\r\n  issue_url as `Issue URL`,\r\n  issue_number as `Issue ID`\r\nFROM\r\n  openalysis.issue_assignees;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1027,7 +1027,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  assignee_login as `Assignee`,\r\n  pull_request_repo_name as `Repo`,\r\n    pull_request_url as `PR URL`,\r\n  pull_request_number as `PR Number`\r\nFROM\r\n  openalysis.pull_request_assignees;",
+          "rawSql": "SELECT\r\n  assignee_login as `Assignee`,\r\n  pull_request_repo_name as `Repo`,\r\n    pull_request_url as `PR URL`,\r\n  pull_request_number as `PR ID`\r\nFROM\r\n  openalysis.pull_request_assignees;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -2697,6 +2697,6 @@
   "timezone": "",
   "title": "OPENALYSIS-CWG-TMPL",
   "uid": "d37734e3-c737-409b-b697-e067c8f1ea1b",
-  "version": 21,
+  "version": 22,
   "weekStart": ""
 }
