@@ -36,10 +36,26 @@ func TestInitTask(t *testing.T) {
 	_ = storage.Init()
 	graphql.Init()
 	rest.Init()
-	err := InitTask(context.Background(), storage.DB) // around 9 min for cloudwego init
-	if err != nil {
+
+	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
 		t.Fatal(err)
 	}
+	if err := GlobalMarker.AddStrategies(config.GlobalConfig.Marker...); err != nil {
+		t.Fatal(err)
+	}
+
+	slog.Info("init task starts now")
+	startInit := time.Now()
+	tx := storage.DB.Begin()
+	err := InitTask(context.Background(), tx)
+	if err == nil {
+		tx.Commit()
+	} else {
+		slog.Error("error doing init task", "err", err.Error())
+		tx.Rollback()
+		slog.Info("transaction rollback")
+	}
+	slog.Info("init task completed", "time", time.Since(startInit).String())
 }
 
 func TestUpdateTask(t *testing.T) {
@@ -48,10 +64,14 @@ func TestUpdateTask(t *testing.T) {
 	graphql.Init()
 	rest.Init()
 
-	slog.Info("update task starts now")
 	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
 		t.Fatal(err)
 	}
+	if err := GlobalMarker.AddStrategies(config.GlobalConfig.Marker...); err != nil {
+		t.Fatal(err)
+	}
+
+	slog.Info("update task starts now")
 	startUpdate := time.Now()
 	tx := storage.DB.Begin()
 	err := UpdateTask(context.Background(), tx)

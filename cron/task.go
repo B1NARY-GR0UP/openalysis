@@ -51,6 +51,8 @@ type RepoData struct {
 	ContributorCount int
 }
 
+// TODO: merge InitTask, UpdateTask into DoTask
+
 func InitTask(ctx context.Context, db *gorm.DB) error {
 	// handle groups
 	for _, group := range config.GlobalConfig.Groups {
@@ -260,6 +262,7 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 			}
 			if err := storage.CreateOrganization(ctx, db, &model.Organization{
 				NodeID:           org.ID,
+				Login:            org.Login,
 				IssueCount:       orgCount.IssueCount,
 				PullRequestCount: orgCount.PullRequestCount,
 				StarCount:        orgCount.StarCount,
