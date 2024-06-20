@@ -23,6 +23,11 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/model"
 )
 
+func TestInit(t *testing.T) {
+	config.GlobalConfig.ReadInConfig("../default.yaml")
+	Init()
+}
+
 func TestQueryContributorCountByOrg(t *testing.T) {
 	config.GlobalConfig.ReadInConfig("../default.yaml")
 	Init()

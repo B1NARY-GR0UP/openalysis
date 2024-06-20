@@ -38,7 +38,7 @@ func (c *Cleaner) AddStrategies(strategies ...string) error {
 	for _, strategy := range strategies {
 		parts := strings.Split(strategy, "=>")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid strategy format: %s", strategy)
+			return fmt.Errorf("invalid cleaner strategy format: %s", strategy)
 		}
 
 		k := strings.Trim(parts[0], "` ")

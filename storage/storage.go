@@ -23,6 +23,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: separate methods into multi files according to the used model
+
 func CreateGroup(ctx context.Context, db *gorm.DB, group *model.Group) error {
 	return db.WithContext(ctx).Create(group).Error
 }
@@ -301,6 +303,8 @@ func CreateContributors(ctx context.Context, db *gorm.DB, cs []*model.Contributo
 	return db.WithContext(ctx).Create(cs).Error
 }
 
+// UpdateContributorCompanyAndLocation
+// TODO: use batch update
 func UpdateContributorCompanyAndLocation(ctx context.Context, db *gorm.DB, update func(string) string) error {
 	var contributors []model.Contributor
 	if err := db.WithContext(ctx).Find(&contributors).Error; err != nil {
@@ -309,6 +313,29 @@ func UpdateContributorCompanyAndLocation(ctx context.Context, db *gorm.DB, updat
 	for _, contributor := range contributors {
 		contributor.Company = update(contributor.Company)
 		contributor.Location = update(contributor.Location)
+		if err := db.WithContext(ctx).Save(&contributor).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UpdateContributorCompanyAndLocationByLogin
+// TODO: use batch update
+func UpdateContributorCompanyAndLocationByLogin(ctx context.Context, db *gorm.DB, login, company, location string) error {
+	var currentContributors []model.Contributor
+	if err := db.WithContext(ctx).Where("login = ?", login).Find(&currentContributors).Error; err != nil {
+		return err
+	}
+	// if empty string, then do not update
+	// TODO: optimize, according to SRP
+	for _, contributor := range currentContributors {
+		if company != "" {
+			contributor.Company = company
+		}
+		if location != "" {
+			contributor.Location = location
+		}
 		if err := db.WithContext(ctx).Save(&contributor).Error; err != nil {
 			return err
 		}

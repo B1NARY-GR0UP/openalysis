@@ -41,3 +41,8 @@ cleaner:
   - "`chongqing` => `Chongqing, China`"
   - "`中国` => `Other, China`"
   - "`China` => `Other, China`"
+# "`login`, `company`, `location`"
+# e.g. "`justlorain`, `binary`, ``"
+# `` means do not update location
+marker:
+  - "`sample user`, `sample company`, `sample location`"

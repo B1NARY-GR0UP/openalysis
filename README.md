@@ -193,16 +193,18 @@ docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 
 ## TODO
 
+- [x] support for marking contributor company manually
 - [ ] org, group time series support
 - [ ] leaderboard, issue, pr adapt to time range
-- [ ] support for marking contributor company manually
-- [ ] issue, pr number => issue. pr id
+- [ ] issue, pr number => issue, pr id
 - [ ] use dashboard variable to implement personal dashboard display
 
 ---
 
-- [ ] use fyne to dev desktop application
 - [ ] parse json to adapt general template
+- [ ] cmd tool optimize
+- [ ] optimize logger
+- [ ] provide more api
 
 ## Acknowledgement
 

@@ -25,6 +25,7 @@ import (
 	"github.com/B1NARY-GR0UP/openalysis/config"
 	"github.com/B1NARY-GR0UP/openalysis/model"
 	"github.com/B1NARY-GR0UP/openalysis/pkg/cleaner"
+	"github.com/B1NARY-GR0UP/openalysis/pkg/marker"
 	"github.com/B1NARY-GR0UP/openalysis/storage"
 	"github.com/B1NARY-GR0UP/openalysis/util"
 	"github.com/robfig/cron/v3"
@@ -35,10 +36,13 @@ import (
 )
 
 // TODO: support group, org, repo update in UpdateTask
+// TODO: support hooks (pre-handle, post-handle)
 
 var ErrReachedRetryTimes = errors.New("error reached retry times")
 
 var GlobalCleaner = cleaner.New()
+
+var GlobalMarker = marker.New()
 
 func Start(ctx context.Context) error {
 	slog.Info("openalysis service started")
@@ -46,6 +50,9 @@ func Start(ctx context.Context) error {
 	errC := make(chan error, 1)
 
 	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
+		return err
+	}
+	if err := GlobalMarker.AddStrategies(config.GlobalConfig.Marker...); err != nil {
 		return err
 	}
 
@@ -82,6 +89,9 @@ func Restart(ctx context.Context) error {
 	errC := make(chan error, 1)
 
 	if err := GlobalCleaner.AddStrategies(config.GlobalConfig.Cleaner...); err != nil {
+		return err
+	}
+	if err := GlobalMarker.AddStrategies(config.GlobalConfig.Marker...); err != nil {
 		return err
 	}
 
@@ -265,8 +275,12 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 	}
-	// do clean
+	// do cleaner, marker
 	if err := CleanContributorCompanyAndLocation(ctx, db); err != nil {
+		return err
+	}
+	// mark must after clean
+	if err := MarkContributorCompanyAndLocation(ctx, db); err != nil {
 		return err
 	}
 	return nil
@@ -403,8 +417,12 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 	}
-	// do clean
+	// do cleaner, marker
 	if err := CleanContributorCompanyAndLocation(ctx, db); err != nil {
+		return err
+	}
+	// mark must after clean
+	if err := MarkContributorCompanyAndLocation(ctx, db); err != nil {
 		return err
 	}
 	return nil
@@ -820,6 +838,15 @@ func DeleteRepos(ctx context.Context, db *gorm.DB, repos []string) error {
 func CleanContributorCompanyAndLocation(ctx context.Context, db *gorm.DB) error {
 	if err := storage.UpdateContributorCompanyAndLocation(ctx, db, GlobalCleaner.Clean); err != nil {
 		return err
+	}
+	return nil
+}
+
+func MarkContributorCompanyAndLocation(ctx context.Context, db *gorm.DB) error {
+	for _, strategy := range GlobalMarker.Marks() {
+		if err := storage.UpdateContributorCompanyAndLocationByLogin(ctx, db, strategy.Login, strategy.Company, strategy.Location); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -126,3 +126,18 @@ func TestClean(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMark(t *testing.T) {
+	_ = config.GlobalConfig.ReadInConfig("../default.yaml")
+	_ = storage.Init()
+	ss := []string{
+		"`justlorain`, `MARK TEST PASS COMPANY`, ``",
+		"`joway`, `MARK TEST PASS COMPANY`, `MARK TEST PASS LOCATION2`",
+		"``, ``, ``",
+		"`shalk`, ``, ``",
+	}
+	_ = GlobalMarker.AddStrategies(ss...)
+	if err := MarkContributorCompanyAndLocation(context.Background(), storage.DB); err != nil {
+		t.Fatal(err)
+	}
+}

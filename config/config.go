@@ -25,6 +25,7 @@ type Config struct {
 	DataSource DataSource `yaml:"datasource"`
 	Backend    Backend    `yaml:"backend"`
 	Cleaner    []string   `yaml:"cleaner"`
+	Marker     []string   `yaml:"marker"`
 }
 
 type Group struct {

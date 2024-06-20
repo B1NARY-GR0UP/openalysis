@@ -21,6 +21,9 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
+// TODO: separate methods into multi files according to the used model
+// TODO: optimize graphql (or storage) model, provide more general data model for customized
+
 type RepoName struct {
 	Organization struct {
 		Repositories struct {
