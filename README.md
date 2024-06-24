@@ -197,14 +197,18 @@ docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 - [x] org, group time series support
 - [x] issue, pr number => issue, pr id
 - [ ] leaderboard, issue, pr adapt to time range
-- [ ] personal dashboard (dashboard variable + dashboard link)
 
 ---
 
+- [ ] provide group, org, repo, contributor four level of dashboards (use dashboard link to jump between different dashboards, use dashboard variables to customize data display in one of the four levels dashboards)
+- [ ] optimize contribution statistics (calculate in pre-analysis)
 - [ ] parse json to adapt general template
 - [ ] cmd tool optimize
 - [ ] optimize logger
 - [ ] provide more api
+- [ ] pre-analyse
+- [ ] optimize error handling
+- [ ] OLAP storage
 
 ## Acknowledgement
 

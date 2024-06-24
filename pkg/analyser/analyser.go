@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package analyser
 
-const (
-	Name    = "openalysis"
-	Version = "v0.1.0"
-)
+// TODO: analyser for pre-analyse

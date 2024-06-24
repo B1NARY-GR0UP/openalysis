@@ -692,7 +692,7 @@ func UpdateRepoData(ctx context.Context, db *gorm.DB, rd *RepoData) error {
 	}); err != nil {
 		return err
 	}
-	if err := storage.UpdateOrCreateContributors(ctx, db, rd.Contributors); err != nil {
+	if err := storage.CreateContributors(ctx, db, rd.Contributors); err != nil {
 		return err
 	}
 	return nil
