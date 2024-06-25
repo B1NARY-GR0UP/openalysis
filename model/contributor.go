@@ -21,6 +21,8 @@ import "gorm.io/gorm"
 // Contributor one to many PullRequest (Author)
 // Contributor many to many Issue (Assignees)
 // Contributor many to many PullRequest (Assignees)
+//
+// NOTE: create on update
 type Contributor struct {
 	gorm.Model
 

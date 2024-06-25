@@ -17,6 +17,8 @@ package model
 import "gorm.io/gorm"
 
 // Organization one to many Repository
+//
+// NOTE: create on update
 type Organization struct {
 	gorm.Model
 

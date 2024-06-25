@@ -29,6 +29,8 @@ type Issue struct {
 	Author       string
 	AuthorNodeID string
 	RepoNodeID   string
+	RepoOwner    string
+	RepoName     string
 	Number       int
 
 	// OPEN | CLOSED

@@ -1,3 +1,4 @@
+-- TODO: need update
 CREATE TABLE `cursors`
 (
     `id`                   bigint unsigned AUTO_INCREMENT,

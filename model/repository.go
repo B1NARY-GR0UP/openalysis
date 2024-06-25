@@ -17,6 +17,8 @@ package model
 import "gorm.io/gorm"
 
 // Repository one to many Contributor
+//
+// NOTE: create on update
 type Repository struct {
 	gorm.Model
 

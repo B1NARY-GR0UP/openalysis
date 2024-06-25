@@ -16,6 +16,9 @@ package model
 
 import "gorm.io/gorm"
 
+// Group
+//
+// NOTE: create on update
 type Group struct {
 	gorm.Model
 
