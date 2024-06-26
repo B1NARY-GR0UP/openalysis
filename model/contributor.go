@@ -33,6 +33,8 @@ type Contributor struct {
 	Location  string
 	AvatarURL string
 
+	RepoOwner     string
+	RepoName      string
 	RepoNodeID    string
 	Contributions int
 }

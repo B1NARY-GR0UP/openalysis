@@ -53,6 +53,8 @@ func GetContributorsByRepo(ctx context.Context, owner, name, repoNodeID string) 
 			Company:       user.Company,
 			Location:      user.Location,
 			AvatarURL:     c.GetAvatarURL(),
+			RepoOwner:     owner,
+			RepoName:      name,
 			RepoNodeID:    repoNodeID,
 			Contributions: c.GetContributions(),
 		})
