@@ -109,8 +109,9 @@ type OrgInfo struct {
 }
 
 type Org struct {
-	ID    string
-	Login string
+	ID        string
+	Login     string
+	AvatarURL string
 }
 
 func QueryOrgInfo(ctx context.Context, login string) (Org, error) {

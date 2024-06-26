@@ -22,8 +22,9 @@ import "gorm.io/gorm"
 type Organization struct {
 	gorm.Model
 
-	Login  string
-	NodeID string
+	Login     string
+	NodeID    string
+	AvatarURL string
 	// TODO: name (public profile name)
 
 	IssueCount       int

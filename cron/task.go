@@ -109,6 +109,7 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 			if err := storage.CreateOrganization(ctx, db, &model.Organization{
 				Login:            org.Login,
 				NodeID:           org.ID,
+				AvatarURL:        org.AvatarURL,
 				IssueCount:       orgCount.IssueCount,
 				PullRequestCount: orgCount.PullRequestCount,
 				StarCount:        orgCount.StarCount,
@@ -263,6 +264,7 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 			if err := storage.CreateOrganization(ctx, db, &model.Organization{
 				NodeID:           org.ID,
 				Login:            org.Login,
+				AvatarURL:        org.AvatarURL,
 				IssueCount:       orgCount.IssueCount,
 				PullRequestCount: orgCount.PullRequestCount,
 				StarCount:        orgCount.StarCount,
