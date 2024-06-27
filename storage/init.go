@@ -62,6 +62,8 @@ func Init() (err error) {
 		&model.GroupsRepositories{},
 		&model.IssueAssignees{},
 		&model.PullRequestAssignees{},
+		&model.AnalyzedOrgContribution{},
+		&model.AnalyzedGroupContribution{},
 	)
 	if err != nil {
 		return

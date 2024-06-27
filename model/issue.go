@@ -49,6 +49,7 @@ type IssueAssignees struct {
 	IssueNumber int
 	IssueURL    string
 	// repo name with owner
+	// TODO: split to IssueRepoOwner and IssueRepoName, grafana dashboard need update
 	IssueRepoName string
 
 	AssigneeNodeID string

@@ -60,12 +60,16 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 		bar := progressbar.Default(int64(len(group.Orgs)+len(group.Repos)), "HANDLING GROUP: "+group.Name)
 
 		var groupCount Count
+		groupContributions := make(map[string]model.AnalyzedGroupContribution)
+
 		// handle orgs in groups
 		for _, login := range group.Orgs {
 			// increase bar
 			_ = bar.Add(1)
 
 			var orgCount Count
+			orgContributions := make(map[string]model.AnalyzedOrgContribution)
+
 			// org data
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
@@ -100,6 +104,37 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 					orgCount.StarCount += rd.Repo.Stargazers.TotalCount
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
 				}
+				// handle new contributor
+				for _, contributor := range rd.Contributors {
+					if _, ok := orgContributions[contributor.NodeID]; !ok {
+						orgContributions[contributor.NodeID] = model.AnalyzedOrgContribution{
+							Login:         contributor.Login,
+							NodeID:        contributor.NodeID,
+							OrgLogin:      org.Login,
+							OrgNodeID:     org.ID,
+							Contributions: 0,
+						}
+					}
+					if _, ok := groupContributions[contributor.NodeID]; !ok {
+						groupContributions[contributor.NodeID] = model.AnalyzedGroupContribution{
+							Login:         contributor.Login,
+							NodeID:        contributor.NodeID,
+							GroupName:     group.Name,
+							Contributions: 0,
+						}
+					}
+				}
+				// calculate contributor contribution by organization and group
+				for _, contributor := range rd.Contributors {
+					if orgContribution, ok := orgContributions[contributor.NodeID]; ok {
+						orgContribution.Contributions += contributor.Contributions
+						orgContributions[contributor.NodeID] = orgContribution
+					}
+					if groupContribution, ok := groupContributions[contributor.NodeID]; ok {
+						groupContribution.Contributions += contributor.Contributions
+						groupContributions[contributor.NodeID] = groupContribution
+					}
+				}
 			}
 			contributorCount, err := storage.QueryContributorCountByOrg(ctx, db, org.ID)
 			if err != nil {
@@ -131,6 +166,11 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 				groupCount.PullRequestCount += orgCount.PullRequestCount
 				groupCount.StarCount += orgCount.StarCount
 				groupCount.ForkCount += orgCount.ForkCount
+			}
+			// create analyzed org contributions
+			if err := storage.CreateAnalyzedOrgContributions(ctx, db, orgContributions); err != nil {
+				slog.Error("error create analyzed org contributions", "err", err.Error())
+				return err
 			}
 		}
 		// handle repos in group
@@ -165,6 +205,24 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 				groupCount.StarCount += rd.Repo.Stargazers.TotalCount
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
 			}
+			// handle new contributor
+			for _, contributor := range rd.Contributors {
+				if _, ok := groupContributions[contributor.NodeID]; !ok {
+					groupContributions[contributor.NodeID] = model.AnalyzedGroupContribution{
+						Login:         contributor.Login,
+						NodeID:        contributor.NodeID,
+						GroupName:     group.Name,
+						Contributions: 0,
+					}
+				}
+			}
+			// calculate contributor contribution by group
+			for _, contributor := range rd.Contributors {
+				if groupContribution, ok := groupContributions[contributor.NodeID]; ok {
+					groupContribution.Contributions += contributor.Contributions
+					groupContributions[contributor.NodeID] = groupContribution
+				}
+			}
 		}
 		contributorCount, err := storage.QueryContributorCountByGroup(ctx, db, group.Name)
 		if err != nil {
@@ -180,6 +238,10 @@ func InitTask(ctx context.Context, db *gorm.DB) error {
 			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error create group", "err", err.Error())
+			return err
+		}
+		if err := storage.CreateAnalyzedGroupContributions(ctx, db, groupContributions); err != nil {
+			slog.Error("err create analyzed group contributions", "err", err.Error())
 			return err
 		}
 	}
@@ -200,11 +262,15 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 		bar := progressbar.Default(int64(len(group.Orgs)+len(group.Repos)), "HANDLING GROUP: "+group.Name)
 
 		var groupCount Count
+		groupContributions := make(map[string]model.AnalyzedGroupContribution)
+
 		for _, login := range group.Orgs {
 			// increase bar
 			_ = bar.Add(1)
 
 			var orgCount Count
+			orgContributions := make(map[string]model.AnalyzedOrgContribution)
+
 			org, err := graphql.QueryOrgInfo(ctx, login)
 			if err != nil {
 				slog.Error("error query org info", "err", err.Error())
@@ -256,6 +322,37 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 					orgCount.StarCount += rd.Repo.Stargazers.TotalCount
 					orgCount.ForkCount += rd.Repo.Forks.TotalCount
 				}
+				// handle new contributor
+				for _, contributor := range rd.Contributors {
+					if _, ok := orgContributions[contributor.NodeID]; !ok {
+						orgContributions[contributor.NodeID] = model.AnalyzedOrgContribution{
+							Login:         contributor.Login,
+							NodeID:        contributor.NodeID,
+							OrgLogin:      org.Login,
+							OrgNodeID:     org.ID,
+							Contributions: 0,
+						}
+					}
+					if _, ok := groupContributions[contributor.NodeID]; !ok {
+						groupContributions[contributor.NodeID] = model.AnalyzedGroupContribution{
+							Login:         contributor.Login,
+							NodeID:        contributor.NodeID,
+							GroupName:     group.Name,
+							Contributions: 0,
+						}
+					}
+				}
+				// calculate contributor contribution by organization and group
+				for _, contributor := range rd.Contributors {
+					if orgContribution, ok := orgContributions[contributor.NodeID]; ok {
+						orgContribution.Contributions += contributor.Contributions
+						orgContributions[contributor.NodeID] = orgContribution
+					}
+					if groupContribution, ok := groupContributions[contributor.NodeID]; ok {
+						groupContribution.Contributions += contributor.Contributions
+						groupContributions[contributor.NodeID] = groupContribution
+					}
+				}
 			}
 			contributorCount, err := storage.QueryContributorCountByOrg(ctx, db, org.ID)
 			if err != nil {
@@ -279,6 +376,11 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 				groupCount.PullRequestCount += orgCount.PullRequestCount
 				groupCount.StarCount += orgCount.StarCount
 				groupCount.ForkCount += orgCount.ForkCount
+			}
+			// create analyzed org contributions
+			if err := storage.CreateAnalyzedOrgContributions(ctx, db, orgContributions); err != nil {
+				slog.Error("error create analyzed org contributions", "err", err.Error())
+				return err
 			}
 		}
 		for _, nameWithOwner := range group.Repos {
@@ -310,6 +412,24 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 				groupCount.StarCount += rd.Repo.Stargazers.TotalCount
 				groupCount.ForkCount += rd.Repo.Forks.TotalCount
 			}
+			// handle new contributor
+			for _, contributor := range rd.Contributors {
+				if _, ok := groupContributions[contributor.NodeID]; !ok {
+					groupContributions[contributor.NodeID] = model.AnalyzedGroupContribution{
+						Login:         contributor.Login,
+						NodeID:        contributor.NodeID,
+						GroupName:     group.Name,
+						Contributions: 0,
+					}
+				}
+			}
+			// calculate contributor contribution by group
+			for _, contributor := range rd.Contributors {
+				if groupContribution, ok := groupContributions[contributor.NodeID]; ok {
+					groupContribution.Contributions += contributor.Contributions
+					groupContributions[contributor.NodeID] = groupContribution
+				}
+			}
 		}
 		contributorCount, err := storage.QueryContributorCountByGroup(ctx, db, group.Name)
 		if err != nil {
@@ -324,6 +444,10 @@ func UpdateTask(ctx context.Context, db *gorm.DB) error {
 			ContributorCount: contributorCount,
 		}); err != nil {
 			slog.Error("error update group", "err", err.Error())
+			return err
+		}
+		if err := storage.CreateAnalyzedGroupContributions(ctx, db, groupContributions); err != nil {
+			slog.Error("err create analyzed group contributions", "err", err.Error())
 			return err
 		}
 	}
