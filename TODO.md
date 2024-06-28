@@ -1,0 +1,8 @@
+- [ ] code logic simplify
+- [ ] parse json to adapt general template
+- [ ] cmd tool optimize
+- [ ] optimize logger
+- [ ] provide more api
+- [ ] pre-analyse
+- [ ] optimize error handling
+- [ ] OLAP storage

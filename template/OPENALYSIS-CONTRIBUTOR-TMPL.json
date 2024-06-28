@@ -114,7 +114,7 @@
         "uid": "${DS_OPENALYSIS-MYSQL}"
       },
       "gridPos": {
-        "h": 9,
+        "h": 10,
         "w": 4,
         "x": 0,
         "y": 0
@@ -126,7 +126,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<img src=\"${avatar_url}\" alt=\"avatar\" width=\"200\" height=\"200\"/>\n\n---\n\n- 🏢 **Company**: ${company}\n- 🏡 **Location**: ${location}\n",
+        "content": "<img src=\"${avatar_url}\" alt=\"avatar\" width=\"200\" height=\"200\"/>\n\n---\n\n- 🏢 **Company**: ${company}\n- 🏡 **Location**: ${location}\n- 🤝 **1st Contribution**: ${first_contribution} \n- 🔥 **Total Contributions**: ${total_contributions}\n",
         "mode": "markdown"
       },
       "pluginVersion": "10.3.3",
@@ -198,7 +198,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 10,
         "w": 11,
         "x": 4,
         "y": 0
@@ -332,7 +332,7 @@
         ]
       },
       "gridPos": {
-        "h": 9,
+        "h": 10,
         "w": 9,
         "x": 15,
         "y": 0
@@ -352,7 +352,12 @@
           "show": true
         },
         "showHeader": true,
-        "sortBy": []
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Contributions"
+          }
+        ]
       },
       "pluginVersion": "10.3.3",
       "targets": [
@@ -427,7 +432,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 10
       },
       "id": 2,
       "options": {
@@ -555,7 +560,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 10
       },
       "id": 3,
       "options": {
@@ -681,7 +686,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Count"
+              "options": "Total Count"
             },
             "properties": [
               {
@@ -697,6 +702,49 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Open Count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Closed Count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
@@ -704,7 +752,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 19
       },
       "id": 4,
       "options": {
@@ -713,7 +761,9 @@
           "countRows": false,
           "enablePagination": true,
           "fields": [
-            "Count"
+            "Total Count",
+            "Open Count",
+            "Closed Count"
           ],
           "reducer": [
             "sum"
@@ -724,7 +774,7 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "Count"
+            "displayName": "Total Count"
           }
         ]
       },
@@ -739,7 +789,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n    CONCAT(repo_owner, '/', repo_name) AS Repo,\r\n    COUNT(*) AS Count\r\nFROM\r\n    issues\r\nWHERE\r\n    author = '$login'\r\nGROUP BY\r\n    repo_node_id;",
+          "rawSql": "SELECT\r\n    CONCAT(repo_owner, '/', repo_name)                AS Repo,\r\n    COUNT(*)                                          AS `Total Count`,\r\n    SUM(IF(state = 'OPEN', 1, 0))                     AS `Open Count`,\r\n    SUM(IF(state = 'CLOSED', 1, 0)) AS `Closed Count`\r\nFROM\r\n    issues\r\nWHERE\r\n    author = '$login'\r\nGROUP BY\r\n    repo_node_id;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -799,7 +849,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Count"
+              "options": "Total Count"
             },
             "properties": [
               {
@@ -817,6 +867,72 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Open Count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Merged Count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Closed Count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
@@ -824,7 +940,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 19
       },
       "id": 5,
       "options": {
@@ -833,7 +949,10 @@
           "countRows": false,
           "enablePagination": true,
           "fields": [
-            "Count"
+            "Total Count",
+            "Open Count",
+            "Merged Count",
+            "Closed Count"
           ],
           "reducer": [
             "sum"
@@ -844,7 +963,7 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "Count"
+            "displayName": "Total Count"
           }
         ]
       },
@@ -859,7 +978,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n    CONCAT(repo_owner, '/', repo_name) AS Repo,\r\n    COUNT(*) AS Count\r\nFROM\r\n    pull_requests\r\nWHERE\r\n    author = '$login'\r\nGROUP BY\r\n    repo_node_id;",
+          "rawSql": "SELECT\r\n    CONCAT(repo_owner, '/', repo_name) AS Repo,\r\n    COUNT(*) AS `Total Count`,\r\n    SUM(IF(state = 'OPEN', 1, 0))                     AS `Open Count`,\r\n    SUM(IF(state = 'MERGED', 1, 0))                     AS `Merged Count`,\r\n    SUM(IF(state = 'CLOSED', 1, 0))                     AS `Closed Count`\r\nFROM\r\n    pull_requests\r\nWHERE\r\n    author = '$login'\r\nGROUP BY\r\n    repo_node_id;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -971,17 +1090,55 @@
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "mysql",
+          "uid": "${DS_OPENALYSIS-MYSQL}"
+        },
+        "definition": "SELECT DATE_FORMAT(pr_merged_at, '%Y-%m-%d') AS `First Commit`\nFROM pull_requests\nWHERE author = '$login' AND state = 'MERGED'\nORDER BY pr_merged_at ASC\nLIMIT 1;",
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "name": "first_contribution",
+        "options": [],
+        "query": "SELECT DATE_FORMAT(pr_merged_at, '%Y-%m-%d') AS `First Commit`\nFROM pull_requests\nWHERE author = '$login' AND state = 'MERGED'\nORDER BY pr_merged_at ASC\nLIMIT 1;",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "mysql",
+          "uid": "${DS_OPENALYSIS-MYSQL}"
+        },
+        "definition": "SELECT SUM(c.contributions) as `TotalContributions`\nFROM openalysis.contributors c\nINNER JOIN (\n    SELECT repo_node_id, MAX(created_at) as MaxDate\n    FROM contributors\n    WHERE Login = '$login'\n    GROUP BY repo_node_id\n) latest_contributions\nON c.repo_node_id = latest_contributions.repo_node_id AND c.created_at = latest_contributions.MaxDate\nWHERE c.login = '$login';",
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "name": "total_contributions",
+        "options": [],
+        "query": "SELECT SUM(c.contributions) as `TotalContributions`\nFROM openalysis.contributors c\nINNER JOIN (\n    SELECT repo_node_id, MAX(created_at) as MaxDate\n    FROM contributors\n    WHERE Login = '$login'\n    GROUP BY repo_node_id\n) latest_contributions\nON c.repo_node_id = latest_contributions.repo_node_id AND c.created_at = latest_contributions.MaxDate\nWHERE c.login = '$login';",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
       }
     ]
   },
   "time": {
-    "from": "2021-07-15T14:35:24.000Z",
-    "to": "2024-06-24T19:28:20.000Z"
+    "from": "2022-01-16T18:53:12.000Z",
+    "to": "2024-06-03T15:44:35.000Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "OPENALYSIS-CONTRIBUTOR-TMPL",
   "uid": "ba57340a-480f-45a8-8c50-ee0df5ec732e",
-  "version": 9,
+  "version": 14,
   "weekStart": ""
 }

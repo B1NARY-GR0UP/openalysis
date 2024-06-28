@@ -191,25 +191,6 @@ docker run -it -v path2config.yaml:/src openalysis start path2config.yaml
 
 - [How to Visualize and Analyze Data in Open Source Communities](https://dev.to/justlorain/how-to-visualize-and-analyze-data-in-open-source-communities-1l35) | [中文](https://juejin.cn/post/7359882185362948135)
 
-## TODO
-
-- [x] support for marking contributor company manually
-- [x] org, group time series support
-- [x] issue, pr number => issue, pr id
-- [ ] leaderboard, issue, pr adapt to time range
-
----
-
-- [ ] provide group, org, repo, contributor four level of dashboards (use dashboard link to jump between different dashboards, use dashboard variables to customize data display in one of the four levels dashboards)
-- [ ] optimize contribution statistics (calculate in pre-analysis)
-- [ ] parse json to adapt general template
-- [ ] cmd tool optimize
-- [ ] optimize logger
-- [ ] provide more api
-- [ ] pre-analyse
-- [ ] optimize error handling
-- [ ] OLAP storage
-
 ## Acknowledgement
 
 Sincere appreciation to the [CloudWeGo](https://github.com/cloudwego) community, without whose help this project would not have been possible.
