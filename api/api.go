@@ -34,7 +34,7 @@ func Restart(ctx context.Context) error {
 
 func ReadInConfig(path string) error {
 	if path == "" {
-		path = "./default.yaml"
+		panic("config file path must not be empty")
 	}
 	if err := config.GlobalConfig.ReadInConfig(path); err != nil {
 		return err
