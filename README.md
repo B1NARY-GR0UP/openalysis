@@ -4,6 +4,8 @@ OPENALYSIS is a tool for visualizing and analyzing data from the GitHub open-sou
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/B1NARY-GR0UP/openalysis)](https://goreportcard.com/report/github.com/B1NARY-GR0UP/openalysis)
 
+[查看中文文档](./README-zh.md)
+
 ## Overview
 
 OPENALYSIS only does three things:
