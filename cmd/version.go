@@ -16,5 +16,5 @@ package cmd
 
 const (
 	Name    = "openalysis"
-	Version = "v0.1.0"
+	Version = "v0.2.0"
 )
