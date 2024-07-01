@@ -10,7 +10,7 @@ Check [How to prepare config file?](./how-to-prepare-config-file.md) for detail.
 
 ## Step 3: Prepare MySQL
 
-Use [init.sql](../storage/sql/init.sql) to init tables.
+Create a schema named `openalysis` and use [init.sql](../storage/sql/init.sql) to init tables.
 
 ## Step 4: Prepare Grafana
 
