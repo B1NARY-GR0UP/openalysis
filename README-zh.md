@@ -60,7 +60,7 @@ OPENALYSIS 提供了四个维度的 Grafana 仪表板：
 - **Fork Count:** 显示组内所有组织和仓库的分叉数变化趋势图。
 - **Contributor Company:** 显示组内所有组织和仓库的贡献者公司分布的饼图。
 - **Contributor Location:** 显示组内所有组织和仓库的贡献者地点分布的饼图。
-- **Leaderboard:** 按贡献数量对组内所有组织和仓库的贡献者进行排名，“Ranged Contributions”字段计算在 Grafana 仪表板中设定的时间范围内的贡献差异。
+- **Leaderboard:** 按贡献数量对组内所有组织和仓库的贡献者进行排名，`Ranged Contributions` 字段计算在 Grafana 仪表板中设定的时间范围内的贡献差异。
 - **Issue Assignees:** 显示组内所有组织和仓库中具有负责人且处于 OPEN 状态的问题。
 - **PR Assignees:** 显示组内所有组织和仓库中具有负责人且处于 OPEN 状态的拉取请求。
 
@@ -73,7 +73,7 @@ OPENALYSIS 提供了四个维度的 Grafana 仪表板：
 - **Profile:** 组织头像。
 - **Contributor Company (support repos):** 显示由 `repos` 变量指定的一个或多个仓库的贡献者公司分布的饼图。
 - **Contributor Location (support repos):** 显示由 `repos` 变量指定的一个或多个仓库的贡献者地点分布的饼图。
-- **Leaderboard:** 按贡献数量对组织下所有仓库的贡献者进行排名，“Ranged Contributions”字段计算在 Grafana 仪表板中设定的时间范围内的贡献差异。
+- **Leaderboard:** 按贡献数量对组织下所有仓库的贡献者进行排名，`Ranged Contributions` 字段计算在 Grafana 仪表板中设定的时间范围内的贡献差异。
 - **Star Count:** 组织下所有仓库的总标星数。
 - **Contributor Count:** 组织下所有仓库的总贡献者数，计算时会去重重复的贡献者。
 - **Issue Count:** 组织下所有仓库的总问题数。
@@ -100,7 +100,7 @@ OPENALYSIS 提供了四个维度的 Grafana 仪表板：
 
 - **Contributor Company:** 显示仓库中所有贡献者公司分布的饼图。
 - **Contributor Location:** 显示仓库中所有贡献者地点分布的饼图。
-- **Leaderboard:** 根据贡献数量对仓库中所有贡献者进行排名，“Ranged Contributions”字段计算在 Grafana 仪表板中设定的时间范围内的贡献差异。
+- **Leaderboard:** 根据贡献数量对仓库中所有贡献者进行排名，`Ranged Contributions` 字段计算在 Grafana 仪表板中设定的时间范围内的贡献差异。
 - **Star Count:** 仓库中的总标星数。
 - **Contributor Count:** 仓库中的总贡献者数，计算时会去重重复的贡献者。
 - **Issue Count:** 仓库中的总问题数。
