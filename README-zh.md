@@ -20,23 +20,59 @@ OPENALYSIS 提供了：
 
 OPENALYSIS 可以让您对您所管理的或所在的开源社区的整体数据有一个概览，我们希望 OPENALYSIS 可以帮助您更好的对开源社区进行建设和发展。
 
-## 部署
-
-
-
 ## 使用
 
 
+## Grafana Dashboard Templates
 
-## Dashboard Effect Display
+OPENALYSIS offers four dimensions of Grafana Dashboards:
 
-![example-1](./images/example-1.png)
+- [Group](./template/OPENALYSIS-GROUP-TMPL.json)
+- [Org](./template/OPENALYSIS-ORG-TMPL.json)
+- [Repo](./template/OPENALYSIS-REPO-TMPL.json)
+- [Contributor](./template/OPENALYSIS-CONTRIBUTOR-TMPL.json)
 
-![example-2](./images/example-2.png)
+Each dashboard provides various forms of visual analysis for the corresponding dimension's data.
 
-![example-3](./images/example-3.png)
+### Group Template
 
-![example-3](./images/example-4.png)
+![group-tmpl](./images/tmpl-group-example.png)
+
+In the Group Template, the panels are arranged in the following order from left to right, top to bottom:
+
+- **Star Count:** Group 中所有 Organizations 和 Repositories 的 stargazer 数总和。
+- **Contributor Count:** Group 中所有 Organizations 和 Repositories 的 contributor 数总和，统计时对重复的贡献者进行了去重。
+- **Issue Count:** Group 中所有 Organizations 和 Repositories 的 issue 数总和。
+- **PR Count:** Group 中所有 Organizations 和 Repositories 的 pull request 数总和。
+- **Fork Count:** Group 中所有 Organizations 和 Repositories 的 fork 数总和。
+- **Star Count:** Group 中所有 Organizations 和 Repositories 的 stargazer 数变化趋势图。
+- **Contributor Count:** Group 中所有 Organizations 和 Repositories 的 contributor 数变化趋势图，统计时对重复的贡献者进行了去重。
+- **Issue Count:** Group 中所有 Organizations 和 Repositories 的 issue 数变化趋势图。
+- **PR Count:** Group 中所有 Organizations 和 Repositories 的 pull request 数变化趋势图。
+- **Fork Count:** Group 中所有 Organizations 和 Repositories 的 fork 数变化趋势图。
+- **Contributor Company:** Group 中所有 Organizations 和 Repositories 的 contributor 的 company 分布饼图。
+- **Contributor Location:** Group 中所有 Organizations 和 Repositories 的 contributor 的 location 分布饼图。
+- **Leaderboard:** Group 中所有 Organizations 和 Repositories 的 contributor 的贡献数排名，其中 `Ranged Contributions` 字段会对 Grafana Dashboard 设置的时间范围内的贡献做差值统计。
+- **Issue Assignees:** Group 中所有 Organizations 和 Repositories 的被分配有 Assignee 的 OPEN issue。
+- **PR Assignees:** Group 中所有 Organizations 和 Repositories 的被分配有 Assignee 的 OPEN pull requests。
+
+### Organization Template
+
+![org-tmpl](./images/tmpl-org-example.png)
+
+In the Organization Template, the panels are arranged in the following order from left to right, top to bottom:
+
+### Repository Template
+
+![repo-tmpl](./images/tmpl-repo-example.png)
+
+In the Repository Template, the panels are arranged in the following order from left to right, top to bottom:
+
+### Contributor Template
+
+![contributor-tmpl](./images/tmpl-contributor-example.png)
+
+In the Contributor Template, the panels are arranged in the following order from left to right, top to bottom:
 
 ## 博客
 

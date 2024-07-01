@@ -2,7 +2,7 @@
 
 ## Example 
 
-A complete configuration file example is as follows:**
+A complete configuration file example is as follows:
 
 ```yaml
 groups:
