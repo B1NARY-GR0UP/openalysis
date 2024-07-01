@@ -13,6 +13,5 @@ FROM alpine
 
 WORKDIR /src
 COPY --from=build /app/openalysis /app/openalysis
-COPY default.yaml /src/default.yaml
 
 ENTRYPOINT ["/app/openalysis"]
