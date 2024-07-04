@@ -10,6 +10,8 @@ Check [How to prepare config file?](./how-to-prepare-config-file.md) for detail.
 
 ## Step 3: Prepare MySQL
 
+**NOTE: Since the `ROW_NUMBER()` syntax is used in the Grafana template, your MySQL version must be higher than 8.0.**
+
 Create a schema named `openalysis` and use [init.sql](../storage/sql/init.sql) to init tables.
 
 ## Step 4: Prepare Grafana

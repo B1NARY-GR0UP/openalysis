@@ -10,6 +10,8 @@
 
 ## 第三步：准备 MySQL
 
+**注意：由于 Grafana 模板中使用了 `ROW_NUMBER()` 语法，所以你的 MySQL 版本需要高于 8.0。**
+
 创建名为 `openalysis` 的模式，并使用 [init.sql](../storage/sql/init.sql) 初始化数据库表。
 
 ## 第四步：准备 Grafana
