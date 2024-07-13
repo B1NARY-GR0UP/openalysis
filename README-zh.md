@@ -130,6 +130,7 @@ OPENALYSIS 提供了四个维度的 Grafana 仪表板：
 
 ## 博客
 
+- [如何构建 Grafana 动态面板并可视化分析开源社区数据](https://juejin.cn/post/7390663832782127145)
 - [如何对开源社区的数据进行可视化分析](https://juejin.cn/post/7359882185362948135)
 
 ## 致谢

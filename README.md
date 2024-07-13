@@ -130,6 +130,7 @@ In the Contributor Template, the panels are arranged in the following order from
 
 ## Blogs
 
+- [How to Build Dynamic Grafana Dashboards and Visualize Open-Source Community Data](https://dev.to/justlorain/how-to-build-dynamic-grafana-dashboards-and-visualize-open-source-community-data-4caa)
 - [How to Visualize and Analyze Data in Open Source Communities](https://dev.to/justlorain/how-to-visualize-and-analyze-data-in-open-source-communities-1l35)
 
 ## Acknowledgement
